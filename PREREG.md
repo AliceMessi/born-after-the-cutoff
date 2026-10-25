@@ -99,7 +99,17 @@ At most 30 instances from T1 (not in the evaluation set) may be used to fix prom
 
 ## 8. Deviations log
 
-(empty at commit time)
+- **25/10, before any Gemma run on evaluation ids. Added baseline RM:** repo-map personalised PageRank over our code graph, seeded by issue identifiers (`loc/baseline_rm.py`). No LLM. It is reported next to R0, B1 and B2 as a "graph without a model" control for H2. No hypothesis changes.
+- **25/10. B2 backend:** EmbeddingGemma 2 runs through sentence-transformers on a Kaggle T4 (float32, max_seq_length 512) instead of the local GGUF server, because the local run was stopped by memory pressure. The same model and prompts, at 256-d.
+- **25/10. Pilot (§6) done, before any Gemma run on evaluation ids.** Pilot ids: `data/v0.1/pilot_ids.txt` (30 T1, seed 0, none in the evaluation set); G2 used the first 15 (`pilot_g2_ids.txt`). Models: E2B and E4B through Ollama 0.40.11 (`gemma4:e2b-it-qat` digest 07ea59a4…, `gemma4:e4b-it-qat` digest ee665637…), native `/api/chat` with `num_ctx` 16384 and `think: false`. Ollama's OpenAI-compatible endpoint cannot set a per-request context, and its default would truncate our prompts. Pilot outputs are kept in `data/v0.1/runs_pilot/` and were used only for the format fixes below, not to choose between methods:
+  1. **File normalization:** a unique match on the guess's trailing path (at least `dir/file.py`) is accepted, so a wrong root folder does not erase a correct module. Junk suffixes (`.def`, `()`) are stripped from function names.
+  2. **Bare qualnames:** in A step 2, G1 and G2, a function written without its path is accepted when it is unique among the candidate files shown. The pilot showed E2B echoing `Class.method` and copying the placeholder `path/to/file.py`.
+  3. **A step-2 template:** the format example now uses the first real candidate path instead of `path/to/file.py`.
+  4. **G1:** the output is a full rerank of the pool, with the model's picks first and the remaining pool in seed order. Files the model names are ranked after the files of its picks. If the model makes no valid pick and names no file, the ranking is empty (§5), never a fallback.
+  5. **G2:** both models answered before exploring, so a final answer is accepted only after 2 tool calls (or at the last step). Common function-calling shapes are accepted (`name`/`tool_name`/`function`, `arguments`/`parameters`, and an OpenAI-style `tool_calls` list, of which the first call is executed). Invalid replies are logged. Files named in the final answer are ranked.
+  6. Measured validity for D2 before these fixes: E4B issued 88 valid tool calls out of 89. E2B issued 0 valid out of 107, all in the `tool_calls` list shape, which fix 5 now parses.
+- **25/10. G2 runs on a seeded 200-instance subsample of `main`** (`data/v0.1/g2_ids.txt`: 100 born-after, 100 old-repository, independent reports preferred), for every model. The reason is the weekly Kaggle GPU budget: G2 costs about 5–10 times more GPU time per instance than G1. P, A and G1 run on all strata. H2 compares G1 with A on `main` as planned, and G2 enters H2 and H4 only on the subsample, paired with the same instances for A and G1.
+- **25/10. 12B** runs as `gemma4:12b-it-qat` through Ollama. Its digest is recorded in the kernel output. 26B-A4B (150-instance subsample) is scheduled for next week's quota.
 
 ## 9. Counts at commit time
 

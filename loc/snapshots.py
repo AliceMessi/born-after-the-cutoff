@@ -10,11 +10,13 @@ The checked-out code is only read as text; it is never imported or executed.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
 
-STORE = Path(__file__).resolve().parent.parent / "data" / "repos" / "git"
+# AGENTLOC_REPO_STORE moves the stores (e.g. to /tmp on Kaggle so they are not saved as output)
+STORE = Path(os.environ.get("AGENTLOC_REPO_STORE") or Path(__file__).resolve().parent.parent / "data" / "repos" / "git")
 SPARSE = ["*.py", "LICENSE*", "LICENCE*", "COPYING*", "NOTICE*"]
 
 

@@ -34,7 +34,8 @@ A1 = ("Repository: {repo}\nGitHub issue:\n{issue}\n\nPython source files:\n{list
       "likely first, one per line, nothing else.")
 A2 = ("GitHub issue:\n{issue}\n\nSkeletons of candidate files:\n{skel}\n\n"
       "Which functions or methods must be edited? Return up to 10 entries, most likely first, one per line, "
-      "formatted exactly as path/to/file.py::ClassName.method or path/to/file.py::function.")
+      "using the file paths from the ### headers above, formatted exactly as "
+      "{example}::ClassName.method or {example}::function_name.")
 ISSUE_CHARS = 6000
 LISTING_CHARS = 40000  # ~10k tokens; longer listings are truncated in B1 order (budget ablation knob)
 
@@ -61,10 +62,11 @@ def run_one(r: dict, method: str, model: str, base_url: str, reasoning: str | No
               max_tokens=200, reasoning_effort=reasoning)
     files = files_from_text(c1["text"], snap.files)
     skel = "\n\n".join(f"### {f}\n{skeleton(snap.root, f)}" for f in files[:3])
-    c2 = chat(msgs(A2.format(issue=issue, skel=skel)), model=model, base_url=base_url, max_tokens=300,
-              reasoning_effort=reasoning)
+    example = files[0] if files else "path/to/file.py"  # pilot: a placeholder path was copied verbatim
+    c2 = chat(msgs(A2.format(issue=issue, skel=skel, example=example)), model=model, base_url=base_url,
+              max_tokens=300, reasoning_effort=reasoning)
     units = {f: [q for q, _ in B._units(snap.text(f))] for f in files[:3]}
-    funcs = funcs_from_text(c2["text"], units, snap.files)
+    funcs = funcs_from_text(c2["text"], units, snap.files, bare_ok=True)
     return {"files": files, "functions": funcs, "calls": [c1, c2], "raw": [c1["text"][:600], c2["text"][:600]]}
 
 
@@ -75,8 +77,13 @@ def main() -> None:
     ap.add_argument("--tag", required=True, help="short model tag for the output file, e.g. e2b")
     ap.add_argument("--ids-file", required=True)
     ap.add_argument("--base-url", default="http://127.0.0.1:1234/v1")
+    ap.add_argument("--backend", choices=["openai", "ollama"], default=None,
+                    help="default: $AGENTLOC_LLM_BACKEND or openai")
     ap.add_argument("--thinking", action="store_true", help="leave thinking on (default: reasoning_effort=none)")
     args = ap.parse_args()
+    if args.backend:
+        import os
+        os.environ["AGENTLOC_LLM_BACKEND"] = args.backend
     out = V01 / "runs" / f"{args.method}-{args.tag}{'-think' if args.thinking else ''}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = {x["instance_id"] for x in read_jsonl(out)} if out.exists() else set()

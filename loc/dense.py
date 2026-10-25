@@ -15,11 +15,12 @@ import array
 import hashlib
 import json
 import math
+import os
 import sqlite3
 import urllib.request
 from pathlib import Path
 
-CACHE = Path(__file__).resolve().parent.parent / "data" / "cache" / "emb.sqlite"
+CACHE = Path(os.environ.get("AGENTLOC_EMB_CACHE") or Path(__file__).resolve().parent.parent / "data" / "cache" / "emb.sqlite")
 UNIT_CHARS = 1500  # ~400 tokens per unit keeps the GPU cost bounded
 
 MODELS = {
@@ -82,6 +83,29 @@ class Encoder:
 
     def doc(self, title: str, text: str) -> str:
         return self.cfg["doc"].format(title=title, text=text[:UNIT_CHARS])
+
+
+class STEncoder(Encoder):
+    """Same prompts, truncation and cache, but a local sentence-transformers model
+    (used on Kaggle GPUs; e.g. `google/embeddinggemma-2`). Inputs are already
+    formatted with the model's task prompts, so `prompt=""` disables any default."""
+
+    def __init__(self, name: str, hf_id: str, device: str = "cuda", batch: int = 16, dtype: str = "float32",
+                 max_seq_length: int = 512):
+        super().__init__(name, served_id=hf_id, batch=batch)
+        import torch  # noqa: F401  (only needed on the GPU host)
+        from sentence_transformers import SentenceTransformer
+
+        kwargs = {"torch_dtype": getattr(torch, dtype)}
+        self.model = SentenceTransformer(hf_id, device=device, model_kwargs=kwargs)
+        # units are capped at UNIT_CHARS (~400 tokens); the default 8k window OOMs a T4 at batch 64
+        self.model.max_seq_length = max_seq_length
+
+    def _post(self, texts: list[str]) -> list[list[float]]:
+        self.calls += 1
+        vecs = self.model.encode(texts, prompt="", batch_size=self.batch, convert_to_numpy=True,
+                                 normalize_embeddings=False, show_progress_bar=False)
+        return [v.tolist() for v in vecs]
 
 
 def dot(a: list[float], b: list[float]) -> float:

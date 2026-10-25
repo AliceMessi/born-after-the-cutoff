@@ -249,11 +249,13 @@ The pipeline is `harvest/harvest.py`, then `harvest/gold.py`. It uses only `gh a
 | R0 | Random file; path-only BM25 (issue vs. file paths) | Guessability floor and the control for RQ2 |
 | B1 | BM25 [44] over path + content (files) and AST units (functions) | Dependency-free implementation in `loc/bm25.py` |
 | B2 | Dense: **EmbeddingGemma 2** [48] (270M text backbone, Apache-2.0, truncated to 256-d MRL, the competition's embedding width) and **jina-embeddings-v2-base-code** [49] (161M, 768-d). Both are official ggml-org GGUFs served through LM Studio / llama.cpp | Changed 25/10 (see §13). Vectors cached by content hash (`data/cache/emb.sqlite`); files ranked by their best unit |
+| RM | Repo-map: personalised PageRank over our code graph, seeded by code-like identifiers in the issue. No LLM, CPU only. Inspired by aider's repo-map (https://aider.chat/docs/repomap.html) | Added 25/10. Isolates what the graph alone contributes |
 | P | Probe: issue only, no repository shown → 5 paths [13] | RQ2 |
 | A | Agentless-style hierarchy [21]: file list → 5 files → skeletons of the top 3 → 10 functions | Two LLM calls |
 | G1 | Graph rerank (non-agentic): B1/B2 seeds → 1-hop `calls/imports/contains` neighbours → Gemma listwise rerank | Robust when small models fail at tool calls |
 | G2 | Graph agent: ReAct loop of at most 12 steps with **exactly** the competition tools `get_code_neighbors(node, edge_type, max_neighbors)`, `search_similar_code(query, k)`, `get_code_subgraph(nodes)` plus `read_file` | As in LocAgent [22] and CoSIL [24], but with the competition interface |
 | L | (stretch) LoRA on E2B or E4B: Agentless step-1 format, trained on T1 and tested on T2, plus a shuffled-label control | RQ5 |
+| MS | (optional, only if budget allows) Bash-only agent with read-only commands at the same step budget as G2, contrasting shell navigation with graph tools. It would use mini-swe-agent==2.4.6 with litellm pinned to 1.81.10 and Gemma through Ollama | Execution-based agents follow CodeAct [50]; production agent scaffolds such as the OpenHands SDK [51] |
 
 **Graph builder** (implemented 25/10: `graph/build_graph.py` v0.2, `graph/tools.py`, tests in `tests/test_graph.py`):
 - Built with Python `ast`. One pass per file produces a record cached by git blob id; names are resolved per snapshot. About 5 s for a 640-file snapshot on a cold cache.
@@ -556,11 +558,31 @@ Results are in `data/v0.1/results/baselines.md`: micro mean, with a repository-c
 - **Schema compatibility:** checked locally against one official graph (§6; details private in `competition_local/NOTES.md`). The layout and id convention match. The differences are deliberate.
 - **Fix found by the comparison:** definitions inside module-level `if`/`try`/`with` blocks were ignored. All four consumers (gold, BM25 units, graph, skeletons) now share `harvest/pyast.py`.
 
-### 13.4 Not completed in this round
+### 13.4 Dense retrieval and graph reachability (completed 25/10)
 
-The B2 dense run (EmbeddingGemma 2) and the graph-reachability diagnostics were **stopped because the system ran critically low on memory**. Another workload held about 3.4 GB at the time. Completed before the stop: 1 B2 instance (discarded) and 10 reachability rows, which are kept and resumable.
+**B2: EmbeddingGemma 2.**
+- Run in the private Kaggle kernel `agentloc-b2-dense`: T4, float32, 256-d MRL, max_seq_length 512.
+- Environment: torch 2.11, transformers 5.20, sentence-transformers 6.2.
+- Scored on the same 518 instances as B1 (paired):
 
-Both scripts resume. They should be rerun when memory allows, or on a Kaggle T4 in a private notebook, which is faster for embeddings anyway. jina-code (B2, secondary) has not been run.
+| Subset | B1 BM25: file Hit@5 / function Hit@10 | B2 dense: file Hit@5 / function Hit@10 |
+|---|---|---|
+| all | **0.799** / **0.713** | 0.743 / 0.516 |
+| independent ∩ T2 | **0.854** / **0.772** | 0.750 / 0.505 |
+| T0 (old repositories, older issues) | 0.646 / 0.469 | **0.727** / **0.520** |
+| issue names no gold file | 0.728 / 0.630 | 0.712 / 0.496 |
+
+Dense retrieval loses to BM25 overall, because so many issues carry lexical cues (55% are prescriptive). It **wins on T0** and nearly ties when the issue names no gold file. A free-text query encoder therefore helps exactly where lexical shortcuts are missing. This is the motivation for the hybrid seeds in G1, and for testing a query encoder next to the provided symbol-keyed similarity tool.
+
+**Graph reachability** (local, 512 instances with function gold; `data/v0.1/results/graph_reachability_summary.json`):
+- Every gold function is a node of our graph, and 30.8% of call sites resolve statically.
+- Seeds are the B1 top-10 functions. Gold functions reached:
+  - 0 hops: 38.6% (71.3% of instances have at least one);
+  - **1 hop: 58.2% (81.2%)**, median candidate pool 59;
+  - 2 hops: 77.3% (89.3%), median pool 307.
+- One hop raises the recall ceiling by about 20 points at a pool size a single Gemma rerank can read (G1 caps it at 40). This is the mechanism H2 tests.
+
+## References
 
 1. Jimenez et al., *SWE-bench: Can Language Models Resolve Real-World GitHub Issues?*, ICLR 2024. https://arxiv.org/abs/2310.06770
 2. SWE-bench Lite. https://www.swebench.com/lite.html
@@ -611,6 +633,8 @@ Both scripts resume. They should be rerun when memory allows, or on a Kaggle T4 
 47. Jain et al., *LiveCodeBench*, ICLR 2025. https://arxiv.org/abs/2403.07974
 48. Google DeepMind, *EmbeddingGemma 2* model card, Sep 2026 (Apache-2.0). https://huggingface.co/google/embeddinggemma-2; GGUF https://huggingface.co/ggml-org/embeddinggemma-2-GGUF
 49. Günther et al., *Jina Embeddings 2: 8192-Token General-Purpose Text Embeddings for Long Documents*, 2023. https://arxiv.org/abs/2310.19923; model https://huggingface.co/jinaai/jina-embeddings-v2-base-code (GGUF https://huggingface.co/ggml-org/jina-embeddings-v2-base-code-Q8_0-GGUF)
+50. Wang et al., *Executable Code Actions Elicit Better LLM Agents* (CodeAct), ICML 2024. https://arxiv.org/abs/2402.01030
+51. Wang et al., *The OpenHands Software Agent SDK: A Composable and Extensible Foundation for Production Agents*, MLSys 2026. https://arxiv.org/abs/2511.03690
 
 Further verified works, to use in the writeup if space allows:
 - Agents: SWE-agent (2405.15793), OpenHands (2407.16741), AutoCodeRover (2404.05427), CodeMonkeys (2501.14723), SWE-RL (2502.18449).

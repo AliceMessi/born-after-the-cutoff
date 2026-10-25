@@ -31,7 +31,7 @@ import snapshots as S  # noqa: E402
 from build_graph import build  # noqa: E402
 from data import V01, load, read_jsonl  # noqa: E402
 from llm import chat  # noqa: E402
-from normalize import funcs_from_text  # noqa: E402
+from normalize import files_from_text, funcs_from_text  # noqa: E402
 from paths import NON_CORE_RE, is_core_py  # noqa: E402
 
 PROMPT = ("GitHub issue:\n{issue}\n\nCandidate functions (id | first lines):\n{cands}\n\n"
@@ -57,10 +57,15 @@ def main() -> None:
     ap.add_argument("--tag", required=True)
     ap.add_argument("--ids-file", required=True)
     ap.add_argument("--base-url", default="http://127.0.0.1:1234/v1")
+    ap.add_argument("--backend", choices=["openai", "ollama"], default=None,
+                    help="default: $AGENTLOC_LLM_BACKEND or openai")
     ap.add_argument("--seeds", type=int, default=10)
     ap.add_argument("--pool", type=int, default=40)
     ap.add_argument("--dense-run", default="B2-embeddinggemma-2")
     args = ap.parse_args()
+    if args.backend:
+        import os
+        os.environ["AGENTLOC_LLM_BACKEND"] = args.backend
     out = V01 / "runs" / f"G1-{args.tag}.jsonl"
     done = {x["instance_id"] for x in read_jsonl(out)} if out.exists() else set()
     keep = {x.strip() for x in Path(args.ids_file).read_text(encoding="utf-8").splitlines() if x.strip()}
@@ -115,14 +120,24 @@ def main() -> None:
                 for k in pool:
                     f, _, q = k.partition("::")
                     units[f].append(q)
-                funcs = [k for k in funcs_from_text(c["text"], dict(units), files) if k in pool][:10]
+                funcs = [k for k in funcs_from_text(c["text"], dict(units), files, bare_ok=True) if k in pool][:10]
                 err = None
             except Exception as e:  # record an empty prediction
                 c, funcs, err = {"text": ""}, [], f"{type(e).__name__}: {e}"[:300]
-            file_order = list(dict.fromkeys(k.partition("::")[0] for k in funcs))
-            file_order += [f for f in b1[iid]["files"] if f not in file_order]
+            picks = list(funcs)
+            named_files = files_from_text(c["text"], files)
+            if picks or named_files:
+                # a listwise reranker reorders the whole pool: model picks first, the rest in seed order (pilot)
+                funcs = picks + [k for k in pool if k not in picks] if picks else []
+                file_order = list(dict.fromkeys(k.partition("::")[0] for k in picks))
+                file_order += [f for f in named_files if f not in file_order]
+                file_order += [f for f in dict.fromkeys(k.partition("::")[0] for k in funcs) if f not in file_order]
+                file_order += [f for f in b1[iid]["files"] if f not in file_order]
+            else:  # PREREG §5: an unparseable or failed output is an empty ranking, never a fallback
+                funcs, file_order = [], []
             fh.write(json.dumps({"instance_id": iid, "model": args.model, "files": file_order[:50],
-                                 "functions": funcs, "pool_size": len(pool),
+                                 "functions": funcs[:50], "model_picks": len(picks) if not err else 0,
+                                 "pool_size": len(pool),
                                  "prompt_tokens": c.get("prompt_tokens"), "completion_tokens": c.get("completion_tokens"),
                                  "seconds": c.get("seconds"), "raw": c["text"][:600], "error": err}) + chr(10))
             fh.flush()

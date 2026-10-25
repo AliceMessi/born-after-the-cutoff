@@ -74,8 +74,17 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", default=str(V01 / "runs"))
     ap.add_argument("--out", default=str(V01 / "results"))
+    ap.add_argument("--ids-file", default=str(V01 / "eval_ids.txt"), help="score only these ids")
+    ap.add_argument("--no-common", action="store_true",
+                    help="do not restrict every method to the instances present in all run files")
+    ap.add_argument("--name", default="baselines", help="output file stem")
     args = ap.parse_args()
-    insts = {r["instance_id"]: r for r in load()}
+    keep = set(Path(args.ids_file).read_text(encoding="utf-8").split())
+    insts = {r["instance_id"]: r for r in load() if r["instance_id"] in keep}
+    if not args.no_common:  # paired comparisons: same instances for every method
+        for f in Path(args.runs).glob("*.jsonl"):
+            present = {x["instance_id"] for x in read_jsonl(f)}
+            insts = {k: v for k, v in insts.items() if k in present}
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     table = {}
@@ -101,7 +110,7 @@ def main() -> None:
                     res[f"{level}.{k}"] = {"mean": round(m, 4), "ci": [round(lo, 4), round(hi, 4)],
                                            "macro": round(macro, 4), "n": len(lrows)}
             table[method][sname] = res
-    (out / "baselines.json").write_text(json.dumps(table, indent=1), encoding="utf-8")
+    (out / f"{args.name}.json").write_text(json.dumps(table, indent=1), encoding="utf-8")
     # compact markdown summary
     lines = ["| method | subset | n | file Hit@1 | file Hit@5 | file Acc@5 | file MRR | func Hit@10 | func Acc@10 |",
              "|---|---|---|---|---|---|---|---|---|"]
@@ -112,7 +121,7 @@ def main() -> None:
                 return f"{v['mean']:.3f} [{v['ci'][0]:.2f},{v['ci'][1]:.2f}]" if v else "-"
             lines.append(f"| {method} | {sname} | {res['n']} | {g('file.hit@1')} | {g('file.hit@5')} | "
                          f"{g('file.acc_all@5')} | {g('file.mrr')} | {g('func.hit@10')} | {g('func.acc_all@10')} |")
-    (out / "baselines.md").write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
+    (out / f"{args.name}.md").write_text(chr(10).join(lines) + chr(10), encoding="utf-8")
     print(chr(10).join(lines))
 
 

@@ -20,17 +20,19 @@ sys.path.insert(0, str(HERE))
 import baselines as B  # noqa: E402
 import snapshots as S  # noqa: E402
 from data import V01, load, read_jsonl  # noqa: E402
-from dense import Encoder, dot  # noqa: E402
+from dense import Encoder, STEncoder, dot  # noqa: E402
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True, choices=["embeddinggemma-2", "jina-code"])
-    ap.add_argument("--served-id", required=True)
+    ap.add_argument("--served-id", required=True, help="server model id, or HF id with --backend st")
+    ap.add_argument("--backend", choices=["openai", "st"], default="openai")
     ap.add_argument("--base-url", default="http://127.0.0.1:1234/v1")
     ap.add_argument("--ids-file", required=True)
     args = ap.parse_args()
-    enc = Encoder(args.model, args.served_id, args.base_url)
+    enc = (STEncoder(args.model, args.served_id) if args.backend == "st"
+           else Encoder(args.model, args.served_id, args.base_url))
     out_path = V01 / "runs" / f"B2-{args.model}.jsonl"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     done = {r["instance_id"] for r in read_jsonl(out_path)} if out_path.exists() else set()
@@ -40,7 +42,11 @@ def main() -> None:
     t0 = time.time()
     with out_path.open("a", encoding="utf-8") as fh:
         for n, r in enumerate(insts, 1):
-            snap = B.Snapshot(S.checkout(r["repo"], r["base_commit"]))
+            try:
+                snap = B.Snapshot(S.checkout(r["repo"], r["base_commit"]))
+            except Exception as e:  # fetch/checkout failure: log and continue
+                print(f"  skip {r['instance_id']}: {type(e).__name__}: {str(e)[:120]}", flush=True)
+                continue
             keys, docs, owner = [], [], []
             for f in snap.files:
                 units = B._units(snap.text(f))
