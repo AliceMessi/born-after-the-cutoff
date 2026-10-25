@@ -1,0 +1,30 @@
+# Everything under data/ stays local: GitHub API cache, repository clones,
+# and harvested records that contain downloaded issue text.
+# Release artifacts are built into release/ by an explicit script and
+# reviewed before any publication.
+data/
+!data/README.md
+
+# Local model files and caches
+*.gguf
+*.safetensors
+models/
+.cache/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secrets (never expected here, ignored defensively)
+kaggle.json
+.env
+*.key
+*.pem
+
+# Gemma 4 Developer Agent main-track Competition Data and any code that reads it:
+# never redistributed (rules 2.4.b / 3.18.a), never shared privately (3.5.d / 3.6).
+competition_local/
+
+# Kaggle page text (not ours to redistribute)
+rules.txt
+.pytest_cache/
