@@ -501,7 +501,66 @@ T1 yield is lower than T2: about 10 a month against 25 for openai-agents. Across
 | Time conflicts | Decision points D1–D3; LoRA is optional |
 
 
-## References
+## 13. Steps 1–2 results (25/10/2026)
+
+### 13.1 Dataset v0.1
+
+- **Harvest:** 30 runs over 26 repositories (`harvest/repos_v01.json`), 0 errors, 4,795 qualifying candidates.
+  - Old repositories' T0 and T1 candidates are capped at 60 per run, giving **4,097 instances** with file-level gold.
+  - By tier: T0 282 · T1 1,390 · **T2 2,425**.
+  - **1,790 born-after.** 1,765 independent, of which 790 are T2.
+  - Gold size: on average 1.61 files and 3.14 functions per instance; 112 instances have no function-level gold.
+- **New since the design:**
+  - a **commit linker** for Copybara repositories: adk-python yields 498 instances that PR mode cannot see;
+  - the curated OpenMinion slice (19);
+  - flags `mostly_new_code` (111) and `issue_older_than_1y` (69), both removed from the evaluation strata.
+- **Leakage:**
+  - the issue names a gold file in 41% of instances and a gold function in 60%;
+  - it quotes the added code in 2.7%;
+  - the reporter is also the fixer in 36%.
+- **Gold audit** (AUDIT.md): **57/60 gold-correct (95.0%, Wilson CI 86.3–98.3%)**, and 55% of issues are prescriptive.
+  - The audit found 4 extractor errors. Each was fixed with a regression test, and gold was regenerated from cached data before any model run.
+  - One linking error is excluded.
+- **Evaluation set** (`harvest/select_eval.py --seed 0`): 519 ids.
+  - `main`: 400 T2, 200 born-after, 328 independent;
+  - `om`: 19;
+  - `rq2_t0`: 100.
+- **Release files** are built locally under `data/v0.1/release/`: a labels file without issue text, an issues file with masking, and stats. Nothing has been published.
+
+### 13.2 Retrieval baselines (no LLM)
+
+Results are in `data/v0.1/results/baselines.md`: micro mean, with a repository-clustered bootstrap 95% CI.
+
+| Method | Subset | n | File Hit@1 | File Hit@5 | File MRR | Function Hit@10 |
+|---|---|---|---|---|---|---|
+| B1 BM25 | all | 518 | 0.556 | 0.799 [0.74, 0.85] | 0.670 | 0.713 |
+| B1 BM25 | **independent ∩ T2 (primary)** | 328 | 0.637 | **0.854** [0.80, 0.90] | 0.734 | 0.772 |
+| B1 BM25 | born-after | 219 | 0.571 | 0.808 | 0.677 | 0.749 |
+| B1 BM25 | old repository, T2 | 200 | 0.645 | 0.865 | 0.749 | 0.794 |
+| B1 BM25 | T0 (old repositories) | 99 | 0.343 | 0.646 | 0.496 | 0.469 |
+| B1 BM25 | issue names no gold file | 257 | 0.448 | 0.728 | 0.577 | 0.630 |
+| B1 BM25 | OpenMinion | 19 | 0.105 | 0.474 | 0.299 | 0.421 |
+| R0-path (guessability) | all | 518 | 0.266 | 0.585 | 0.411 | – |
+| R0-random | all | 518 | 0.019 | 0.054 | 0.043 | – |
+
+**Readings** (descriptive; the pre-registered tests run in step 3):
+- **BM25 is a strong floor**, as SweRank [26] and Agentless [21] also report. Any Gemma method has to beat file Hit@5 ≈ 0.80–0.85.
+- **Path names alone are very informative:** R0-path reaches Hit@5 0.585. The probe P in RQ2 must therefore be read against this control, not against random.
+- **Old repositories are easier than born-after ones for path-only and BM25 alike:** R0-path 0.645 versus 0.566. This is a first hint of the familiarity and naming confound that RQ2 targets.
+- **T0 is harder than T2 for BM25** (0.646 versus 0.835). T0 is dominated by older, terser issues from the competition and old agent repositories. Tier and repository are confounded here, so the RQ2 analysis compares within repository groups.
+- **OpenMinion's own issues are hard for BM25** (deep package paths, behaviour-level descriptions). That makes the slice an informative case study.
+
+### 13.3 Graph builder and tools
+
+- **Status:** `graph/build_graph.py` v0.3 (cached per blob, about 5 s for a 640-file snapshot on a cold cache) and `graph/tools.py`, with the same three tool signatures as the competition. Covered by tests.
+- **Schema compatibility:** checked locally against one official graph (§6; details private in `competition_local/NOTES.md`). The layout and id convention match. The differences are deliberate.
+- **Fix found by the comparison:** definitions inside module-level `if`/`try`/`with` blocks were ignored. All four consumers (gold, BM25 units, graph, skeletons) now share `harvest/pyast.py`.
+
+### 13.4 Not completed in this round
+
+The B2 dense run (EmbeddingGemma 2) and the graph-reachability diagnostics were **stopped because the system ran critically low on memory**. Another workload held about 3.4 GB at the time. Completed before the stop: 1 B2 instance (discarded) and 10 reachability rows, which are kept and resumable.
+
+Both scripts resume. They should be rerun when memory allows, or on a Kaggle T4 in a private notebook, which is faster for embeddings anyway. jina-code (B2, secondary) has not been run.
 
 1. Jimenez et al., *SWE-bench: Can Language Models Resolve Real-World GitHub Issues?*, ICLR 2024. https://arxiv.org/abs/2310.06770
 2. SWE-bench Lite. https://www.swebench.com/lite.html
