@@ -597,6 +597,41 @@ Results are in `data/v0.1/results/eval_retrieval.md` and `full_retrieval.md`. RM
 - The graph alone, seeded only by identifiers in the issue, equals BM25 on file Hit@5. It trails BM25 on top-1 and at function level.
 - **Full set, B1 (n = 4,097):** file Hit@5 0.793. By tier: T2 0.854 · T1 0.725 · T0 0.610. Born-after 0.790; independent 0.755.
 
+### 13.4d Step 3, interim (25/10): Gemma 4 E2B and E4B on the evaluation set
+
+**Setup.** Private Kaggle T4 kernels `agentloc-gemma-e2b` and `agentloc-gemma-e4b`:
+- Ollama 0.40.11 with QAT tags; `num_ctx` 16384; thinking off;
+- prompts frozen at commit `cb9763e` after the pilot (PREREG §8).
+
+**Results:** paired, n = 519 (`data/v0.1/results/eval_e2b_e4b.md`).
+
+| Method | File Hit@1 | File Hit@5 | Function Hit@10 | Median prompt tokens | Median s/instance |
+|---|---|---|---|---|---|
+| B1 BM25 | 0.557 | 0.800 | 0.714 | 0 | – |
+| RM (graph, no LLM) | 0.484 | 0.800 | 0.635 | 0 | – |
+| P, E2B (issue only) | 0.516 | 0.572 | – | 864 | 1.2 |
+| A, E2B (Agentless-style) | 0.613 | 0.805 | 0.563 | 8,096 | 5.1 |
+| **G1, E2B** (graph rerank) | **0.748** | **0.871** | **0.760** | 3,063 | 1.6 |
+| P, E4B | 0.532 | 0.570 | – | 864 | 1.9 |
+| A, E4B | 0.653 | 0.813 | 0.614 | 7,938 | 8.5 |
+| **G1, E4B** | **0.801** | **0.896** | **0.797** | 3,063 | 2.8 |
+
+**Pre-registered tests so far** (`loc/analysis.py`; 12B, G2 and A-masked still running):
+- **H2 supported for both E2B and E4B.** On independent ∩ main (n = 325), function Hit@10 is G1 0.785 vs A 0.551 for E2B and G1 0.840 vs A 0.612 for E4B. Paired permutation test, Holm-corrected p = 0.0002 for both.
+  - The second clause, a larger gain on born-after repositories, is **not supported**: interaction −0.048 for both models (CI around 0).
+- **H3** (descriptive): G1 − A = 0.210 [0.141, 0.289] for E2B and 0.203 [0.150, 0.257] for E4B. 12B is pending.
+- **H1 not supported** for E2B or E4B. The diff-of-diffs is −0.115 and −0.125, and both CIs include 0. The probe's apparent success comes from file names stated in the issue, which T2 issues contain more often than T0 issues.
+- **H5, B1 part:** masking costs 0.39–0.41 file Hit@5 both with and without a file mention (interaction −0.01, CI includes 0). The A-e4b part is pending.
+
+**Exploratory, not pre-registered** (labelled as such in the paper). On T2 issues that name no gold file, the issue-only probe (E2B) scores:
+
+| Repositories | n | Probe file Hit@5 | Path-only control Hit@5 |
+|---|---|---|---|
+| Old | 86 | 0.384 | 0.605 |
+| Born-after | 91 | 0.176 | 0.538 |
+
+With issues of the same period, the model guesses files twice as well in familiar codebases (+0.21), while the path control differs much less (+0.07). This is the codebase-familiarity effect that the born-after control was designed to expose. The pre-registered T0-vs-born-after contrast mixes in older, terser issues and cannot show it.
+
 ## References
 
 1. Jimenez et al., *SWE-bench: Can Language Models Resolve Real-World GitHub Issues?*, ICLR 2024. https://arxiv.org/abs/2310.06770
