@@ -37,7 +37,7 @@ def main() -> None:
         for sub in ("harvest", "loc", "graph"):
             for p in sorted((ROOT / sub).glob("*.py")) + sorted((ROOT / sub).glob("*.json")):
                 z.write(p, f"project/{sub}/{p.name}")
-        for name in ("gold.jsonl", "eval_ids.txt", "pilot_ids.txt", "pilot_g2_ids.txt", "g2_ids.txt", "audit_exclusions.txt"):
+        for name in ("gold.jsonl", "eval_ids.txt", "pilot_ids.txt", "pilot_g2_ids.txt", "g2_ids.txt", "main_ids.txt", "audit_exclusions.txt"):
             z.write(V01 / name, f"project/data/v0.1/{name}")
         b1 = V01 / "runs" / "B1-bm25.jsonl"
         if b1.exists():

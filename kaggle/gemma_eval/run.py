@@ -50,12 +50,14 @@ for m in CONFIG["methods"]:
     ids = CONFIG["g2_ids"] if m == "G2" else CONFIG["ids"]
     if m in ("P", "A"):
         cmd = f"python loc/run_llm.py --method {m} {common} --ids-file {ids}"
+    elif m == "A-masked":  # PREREG H5: identifier-masked issues
+        cmd = f"python loc/run_llm.py --method A --mask {common} --ids-file {ids}"
     elif m == "G1":
         cmd = f"python loc/run_g1.py {common} --ids-file {ids}"
     else:
         cmd = f"python loc/run_g2.py {common} --ids-file {ids} --embed google/embeddinggemma-2 --embed-device cuda:1"
     left = max(60, int(deadline - time.time()))
     sh(f"timeout {left}s {cmd} 2>&1 | tail -3", check=False)   # resumable: partial rows are kept
-    save_runs([f"{m}-{CONFIG['tag']}.jsonl"])
+    save_runs([f"A-{CONFIG['tag']}-masked.jsonl" if m == "A-masked" else f"{m}-{CONFIG['tag']}.jsonl"])
 shutil.copy("/tmp/ollama.log", f"{OUT}/ollama.log")
 srv.terminate()

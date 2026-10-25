@@ -20,6 +20,7 @@ sys.path.insert(0, str(HERE))
 import baselines as B  # noqa: E402
 import snapshots as S  # noqa: E402
 from data import V01, load, read_jsonl  # noqa: E402
+from mask import mask_issue, snapshot_symbols  # noqa: E402
 
 METHODS = ("R0-random", "R0-path", "B1-bm25")
 
@@ -29,7 +30,11 @@ def main() -> None:
     ap.add_argument("--ids-file", help="restrict to these instance ids (one per line)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--runs", default=str(V01 / "runs"))
+    ap.add_argument("--mask", action="store_true", help="identifier-masked issue text (PREREG H5); writes B1-bm25-masked")
     args = ap.parse_args()
+    global METHODS
+    if args.mask:
+        METHODS = ("B1-bm25-masked",)
 
     runs = Path(args.runs)
     runs.mkdir(parents=True, exist_ok=True)
@@ -56,8 +61,12 @@ def main() -> None:
                 print(f"  skip {r['instance_id']}: {type(e).__name__}: {str(e)[:120]}", flush=True)
                 continue
             q = r["problem_statement"]
+            if args.mask:
+                syms = {u for f in snap.files for u, _ in snap.unit_tfs(f)}
+                q = mask_issue(q, snapshot_symbols({"": sorted(syms)}, snap.files))
             iid = r["instance_id"]
-            out = {
+            out = {"B1-bm25-masked": {"files": B.rank_bm25_files(snap, q)[:50],
+                                      "functions": B.rank_bm25_functions(snap, q)}} if args.mask else {
                 "R0-random": {"files": B.rank_random(snap, iid)[:50]},
                 "R0-path": {"files": B.rank_path_bm25(snap, q)[:50]},
                 "B1-bm25": {"files": B.rank_bm25_files(snap, q)[:50], "functions": B.rank_bm25_functions(snap, q)},

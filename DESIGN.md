@@ -582,6 +582,21 @@ Dense retrieval loses to BM25 overall, because so many issues carry lexical cues
   - 2 hops: 77.3% (89.3%), median pool 307.
 - One hop raises the recall ceiling by about 20 points at a pool size a single Gemma rerank can read (G1 caps it at 40). This is the mechanism H2 tests.
 
+### 13.4c No-LLM baselines on the evaluation set (paired, n = 519) and the full set
+
+Results are in `data/v0.1/results/eval_retrieval.md` and `full_retrieval.md`. RM ran in the private CPU kernel `agentloc-rm`; full-set R0/B1 ran in `agentloc-full-baselines` (4,097 instances, about 2.7 h of CPU).
+
+| Method | File Hit@1 | File Hit@5 | Function Hit@10 | File Hit@5, independent ∩ T2 | File Hit@5, issue names no gold file |
+|---|---|---|---|---|---|
+| R0-random | 0.019 | 0.054 | – | 0.037 | 0.039 |
+| R0-path | 0.266 | 0.586 | – | 0.595 | 0.519 |
+| **RM** (repo-map PPR, no LLM) | 0.484 | **0.800** | 0.635 | 0.845 | 0.686 |
+| B1 BM25 | **0.557** | **0.800** | **0.714** | **0.854** | **0.729** |
+| B2 EmbeddingGemma 2 | 0.437 | 0.744 | 0.517 | 0.750 | 0.713 |
+
+- The graph alone, seeded only by identifiers in the issue, equals BM25 on file Hit@5. It trails BM25 on top-1 and at function level.
+- **Full set, B1 (n = 4,097):** file Hit@5 0.793. By tier: T2 0.854 · T1 0.725 · T0 0.610. Born-after 0.790; independent 0.755.
+
 ## References
 
 1. Jimenez et al., *SWE-bench: Can Language Models Resolve Real-World GitHub Issues?*, ICLR 2024. https://arxiv.org/abs/2310.06770

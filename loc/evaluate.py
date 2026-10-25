@@ -78,17 +78,20 @@ def main() -> None:
     ap.add_argument("--no-common", action="store_true",
                     help="do not restrict every method to the instances present in all run files")
     ap.add_argument("--name", default="baselines", help="output file stem")
+    ap.add_argument("--methods", default="", help="comma-separated run-file stems to include (default: all)")
     args = ap.parse_args()
     keep = set(Path(args.ids_file).read_text(encoding="utf-8").split())
     insts = {r["instance_id"]: r for r in load() if r["instance_id"] in keep}
+    wanted = [m for m in args.methods.split(",") if m]
+    run_files = [f for f in sorted(Path(args.runs).glob("*.jsonl")) if not wanted or f.stem in wanted]
     if not args.no_common:  # paired comparisons: same instances for every method
-        for f in Path(args.runs).glob("*.jsonl"):
+        for f in run_files:
             present = {x["instance_id"] for x in read_jsonl(f)}
             insts = {k: v for k, v in insts.items() if k in present}
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     table = {}
-    for f in sorted(Path(args.runs).glob("*.jsonl")):
+    for f in run_files:
         method = f.stem
         scored = score(insts, read_jsonl(f))
         table[method] = {}

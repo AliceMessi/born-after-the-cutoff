@@ -23,6 +23,7 @@ import snapshots as S  # noqa: E402
 from data import V01, load, read_jsonl  # noqa: E402
 from llm import chat  # noqa: E402
 from normalize import files_from_text, funcs_from_text  # noqa: E402
+from mask import mask_issue, snapshot_symbols  # noqa: E402
 from repo import skeleton  # noqa: E402
 
 SYSTEM = "You are a precise software engineer. Answer only in the requested format."
@@ -40,9 +41,12 @@ ISSUE_CHARS = 6000
 LISTING_CHARS = 40000  # ~10k tokens; longer listings are truncated in B1 order (budget ablation knob)
 
 
-def run_one(r: dict, method: str, model: str, base_url: str, reasoning: str | None) -> dict:
+def run_one(r: dict, method: str, model: str, base_url: str, reasoning: str | None, mask: bool = False) -> dict:
     snap = B.Snapshot(S.checkout(r["repo"], r["base_commit"]))
     issue = r["problem_statement"][:ISSUE_CHARS]
+    if mask:  # PREREG H5: identifier-masked issue text
+        syms = {u for f in snap.files for u, _ in snap.unit_tfs(f)}
+        issue = mask_issue(issue, snapshot_symbols({"": sorted(syms)}, snap.files))
     msgs = lambda u: [{"role": "system", "content": SYSTEM}, {"role": "user", "content": u}]  # noqa: E731
     if method == "P":
         c = chat(msgs(PROBE.format(repo=r["repo"], issue=issue)), model=model, base_url=base_url,
@@ -80,11 +84,12 @@ def main() -> None:
     ap.add_argument("--backend", choices=["openai", "ollama"], default=None,
                     help="default: $AGENTLOC_LLM_BACKEND or openai")
     ap.add_argument("--thinking", action="store_true", help="leave thinking on (default: reasoning_effort=none)")
+    ap.add_argument("--mask", action="store_true", help="identifier-masked issue text (PREREG H5)")
     args = ap.parse_args()
     if args.backend:
         import os
         os.environ["AGENTLOC_LLM_BACKEND"] = args.backend
-    out = V01 / "runs" / f"{args.method}-{args.tag}{'-think' if args.thinking else ''}.jsonl"
+    out = V01 / "runs" / f"{args.method}-{args.tag}{'-think' if args.thinking else ''}{'-masked' if args.mask else ''}.jsonl"
     out.parent.mkdir(parents=True, exist_ok=True)
     done = {x["instance_id"] for x in read_jsonl(out)} if out.exists() else set()
     keep = {x.strip() for x in Path(args.ids_file).read_text(encoding="utf-8").splitlines() if x.strip()}
@@ -94,7 +99,7 @@ def main() -> None:
     with out.open("a", encoding="utf-8") as fh:
         for n, r in enumerate(insts, 1):
             try:
-                res = run_one(r, args.method, args.model, args.base_url, None if args.thinking else "none")
+                res = run_one(r, args.method, args.model, args.base_url, None if args.thinking else "none", args.mask)
             except Exception as e:  # API/snapshot failure: record an empty prediction, never skip silently
                 res = {"files": [], "functions": [], "calls": [], "raw": [], "error": f"{type(e).__name__}: {e}"[:300]}
             calls = res.pop("calls")
