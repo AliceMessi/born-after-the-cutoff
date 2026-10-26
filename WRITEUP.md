@@ -55,7 +55,7 @@ The Gemma 4 methods [19] use E2B, E4B and 12B as instruction-tuned QAT checkpoin
 
 From the B1 top-10 seeds, one hop reaches 58.2% of gold functions, against 38.6% at zero hops, with a median pool of 59 units.
 
-Hypotheses, strata, metrics and exclusions were committed before any Gemma run on evaluation instances. The changes that followed a 30-instance pilot (output parsing, prompt examples, at least two tool calls before G2 may answer) and a 200-instance G2 subsample chosen for budget reasons were logged before the evaluation runs. The evaluation set has 519 instances: 400 T2 instances in `main` (200 born-after, 328 independent), 19 curated OpenMinion instances reported separately because the authors filed and fixed those issues, and 100 T0 instances from older repositories.
+Hypotheses, strata, metrics and exclusions were committed before any Gemma run on evaluation instances. The changes that followed a 30-instance pilot (output parsing, prompt examples, at least two tool calls before G2 may answer) and a 200-instance G2 subsample chosen for budget reasons were logged before the evaluation runs. The evaluation set has 519 instances: 400 T2 instances in `main` (200 born-after, 328 independent), 19 curated OpenMinion instances reported separately because the author filed and fixed those issues with the same AI assistant, and 100 T0 instances from older repositories.
 
 ## 5. Results
 
@@ -92,7 +92,7 @@ On the 200-instance G2 subsample, the agent is much weaker than the single-call 
 
 ## 6. Limitations
 
-The gold audit was performed by an LLM-based research agent (Claude), the same assistant that wrote the pipeline, and no human checked its judgements, so the audit is not independent of the extractor it validates. Every error it found was fixed in code rather than relabelled. Gold is the fix that landed, so valid alternative locations count as misses; Hit@k softens this and Acc@k does not. The G2 subsample (200) and the T0 cell (100) limit statistical power, and T0 also contains older, terser issues, so tier and issue style are confounded there. Many issues name their own fix location, which is why we report the independent and no-mention subsets. Results use 4-bit QAT GGUF checkpoints served by Ollama, while the competition harness serves different quantized checkpoints, so absolute numbers may shift. The 19 OpenMinion instances come from issues the authors filed and fixed; they are analysed separately and never pooled.
+The gold audit was performed by an LLM-based research agent (Claude), the same assistant that wrote the pipeline, and no human checked its judgements, so the audit is not independent of the extractor it validates. Every error it found was fixed in code rather than relabelled. Gold is the fix that landed, so valid alternative locations count as misses; Hit@k softens this and Acc@k does not. The G2 subsample (200) and the T0 cell (100) limit statistical power, and T0 also contains older, terser issues, so tier and issue style are confounded there. Many issues name their own fix location, which is why we report the independent and no-mention subsets. Results use 4-bit QAT GGUF checkpoints served by Ollama, while the competition harness serves different quantized checkpoints, so absolute numbers may shift. The 19 OpenMinion issues were filed and fixed by the author with the same AI assistant, then independently reviewed and merged upstream; they are analysed separately and never pooled.
 
 ## 7. Verifiability
 
@@ -100,7 +100,7 @@ All code is released under Apache-2.0: the harvester, gold extraction, graph bui
 
 ## AI assistance
 
-The pipeline code, the analyses and the drafting of this writeup were done with an AI coding and research assistant (Claude), directed and reviewed by the authors. The same assistant performed the gold audit described in §3.
+The pipeline code, the analyses and the drafting of this writeup were done with an AI coding and research assistant (Claude), directed and reviewed by the author. The same assistant performed the gold audit described in §3.
 
 ## References
 

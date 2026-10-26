@@ -83,7 +83,7 @@ the dataset's `env/` folder.
 ## AI assistance
 
 The code, the analyses, the gold audit and the drafting of the paper were done with an AI coding and
-research assistant (Claude), directed and reviewed by the authors.
+research assistant (Claude), directed and reviewed by the author.
 
 ## Citation
 

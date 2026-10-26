@@ -89,5 +89,5 @@ repository at `base_commit`.
 
 Gold is the fix that landed, so other valid locations count as misses. An LLM-based research agent (Claude)
 audited 60 instances, and no human reviewed its labels. Many issues name their own fix location; the `flags` and the independent subset let you
-control for this. The 19 OpenMinion instances come from issues filed and fixed by the paper's authors
-and are reported separately.
+control for this. The 19 OpenMinion instances come from issues filed and fixed by the paper's author
+with the same AI assistant, then reviewed and merged by the upstream maintainer; they are reported separately.

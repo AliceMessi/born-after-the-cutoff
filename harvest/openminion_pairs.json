@@ -1,6 +1,6 @@
 {
   "repo": "openminion/openminion",
-  "note": "Curated issue -> fixing-PR pairs for the hand-verified slice. Issues were filed and fixed by the paper authors in Oct 2026; every PR merged into `dev` with failing-first regression tests and a Validation section. GitHub does not auto-link these (PRs target `dev`, several bodies say `Refs`), so the generic harvester finds only 5 of them. Mapping checked against PR bodies on 2026-10-24. #328 has two PRs (#337 render evidence, #343 closure verdict).",
+  "note": "Curated issue -> fixing-PR pairs for the hand-verified slice. Issues were filed and fixed by the paper's author with an AI assistant (Claude) in Oct 2026, then reviewed and merged by the upstream maintainer; every PR merged into `dev` with failing-first regression tests and a Validation section. GitHub does not auto-link these (PRs target `dev`, several bodies say `Refs`), so the generic harvester finds only 5 of them. Mapping checked against PR bodies on 2026-10-24. #328 has two PRs (#337 render evidence, #343 closure verdict).",
   "pairs": [
     {"pr": 334, "issue": 324},
     {"pr": 335, "issue": 323},
