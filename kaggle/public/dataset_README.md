@@ -12,7 +12,8 @@ cutoff.
 - 1,790 instances come from six repositories created after January 2025 (`born_after_cutoff`).
 - An independent subset of 1,765 instances: reporter different from fixer, issue filed at least 24 h
   before the fix, no quoted fix code.
-- A 60-instance audit found the gold labels correct for 57 (95.0%).
+- A 60-instance audit, performed by an LLM-based research agent (Claude) without human review, found the
+  gold labels correct for 57 (95.0%).
 
 This dataset holds every run output and reference result behind the accompanying paper, so all of
 its tables and figures can be rebuilt on CPU with the replay notebook.
@@ -84,7 +85,7 @@ repository at `base_commit`.
 
 ## Known limitations
 
-Gold is the fix that landed, so other valid locations count as misses. One annotator audited 60
-instances. Many issues name their own fix location; the `flags` and the independent subset let you
+Gold is the fix that landed, so other valid locations count as misses. An LLM-based research agent (Claude)
+audited 60 instances, and no human reviewed its labels. Many issues name their own fix location; the `flags` and the independent subset let you
 control for this. The 19 OpenMinion instances come from issues filed and fixed by the paper's authors
 and are reported separately.

@@ -6,7 +6,7 @@
 
 Before a coding agent can fix an issue it has to find where to change the code, and the repositories used to measure this are ones today's models have probably seen in training. We release a localization resource that controls for this in two ways. Its 4,097 issue-to-fix instances, from 26 permissively licensed Python agent and LLM-framework repositories, are split into three tiers by issue date relative to Gemma 4's stated pre-training cutoff (January 2025) and public release (April 2026). And 1,790 of them come from six repositories that did not exist before the cutoff, so their code cannot have been memorized.
 
-Gold files and functions come from the landed diff; an audit of 60 instances found 95% of the gold labels correct (Wilson 95% CI 86 to 98%). Code graphs follow the NetworkX node-link layout that the Gemma 4 Developer Agent competition documents publicly. We report no-LLM baselines (BM25, dense retrieval with EmbeddingGemma 2, and a repo-map PageRank) and four Gemma 4 methods.
+Gold files and functions come from the landed diff; an audit of 60 instances, performed by an LLM-based research agent (Claude), found 95% of the gold labels correct (Wilson 95% CI 86 to 98%). Code graphs follow the NetworkX node-link layout that the Gemma 4 Developer Agent competition documents publicly. We report no-LLM baselines (BM25, dense retrieval with EmbeddingGemma 2, and a repo-map PageRank) and four Gemma 4 methods.
 
 On a pre-registered evaluation set of 519 instances, a single-call graph rerank (G1) with Gemma 4 E4B reaches file Hit@1 0.80 and function Hit@10 0.80, against 0.56 and 0.71 for BM25; 12B reaches 0.83 and 0.81. G1 beats an Agentless-style prompt by +0.23 function Hit@10 for both E2B and E4B (Holm-corrected p = 0.0002), and it beats a 12-step tool-using graph agent at a tenth of the tokens. Two pre-registered predictions failed: the graph's gain is no larger on unseen codebases, and a memorization probe shows no tier effect beyond guessability. An exploratory analysis points to a codebase-familiarity effect that only the born-after split can show.
 
@@ -36,7 +36,7 @@ Tiers follow the issue date: T0 before 2025-02-01 (282 instances), T1 up to the 
 
 The reporter is also the fixer in 36% of instances, and many issues are filed minutes before the fix. Issues name a gold file in 41% of instances and a gold function in 60%. We therefore define an independent subset (a different author, an issue filed at least 24 h before the fix, no quoted fix code) of 1,765 instances.
 
-One annotator labelled 60 stratified instances against a fixed rubric. Gold was correct for 57 of 60 (95.0%, CI 86.3 to 98.3%); the errors were one linking mistake and one fix made mostly of new code. 55% of the issues were prescriptive, naming the exact location or change. The audit also found four bugs in the extractor (an appended function credited to its neighbour, a file leaking in from a stacked PR, re-wrapped signatures, and definitions inside module-level `try` blocks). Each was fixed with a regression test, and all gold was regenerated before any model run.
+An LLM-based research agent (Claude) labelled 60 stratified instances against a fixed rubric, and no human reviewed its labels. Gold was correct for 57 of 60 (95.0%, CI 86.3 to 98.3%); the errors were one linking mistake, one fix made mostly of new code and one fix to a module-level constant, which function-level gold cannot credit. 55% of the issues were prescriptive, naming the exact location or change. The audit also found four bugs in the extractor (an appended function credited to its neighbour, a file leaking in from a stacked PR, re-wrapped signatures, and definitions inside module-level `try` blocks). Each was fixed with a regression test, and all gold was regenerated before any model run.
 
 The release contains the task labels without issue text (CC BY 4.0, with source URLs) and the issue text with mentions, e-mail addresses, home-directory names and credential-like strings masked. It also contains code graphs in NetworkX node-link JSON with the publicly documented fields (`id`, `name`, `source`, `target`, `type`, `key`) plus module nodes and typed edges (calls, contains, imports, inherits). Node text, which is upstream source code, is left out and rebuilt from GitHub by our builder at the pinned commits. The harvester is included, so new tiers can be built for future models.
 
@@ -55,7 +55,7 @@ The Gemma 4 methods [19] use E2B, E4B and 12B as instruction-tuned QAT checkpoin
 
 From the B1 top-10 seeds, one hop reaches 58.2% of gold functions, against 38.6% at zero hops, with a median pool of 59 units.
 
-Hypotheses, strata, metrics and exclusions were committed before any Gemma run on evaluation instances. The changes that followed a 30-instance pilot (output parsing, prompt examples, at least two tool calls before G2 may answer) and a 200-instance G2 subsample chosen for budget reasons were logged before the evaluation runs. The evaluation set has 519 instances: 400 T2 instances in `main` (200 born-after, 328 independent), 19 hand-verified OpenMinion instances reported separately because the authors filed and fixed those issues, and 100 T0 instances from older repositories.
+Hypotheses, strata, metrics and exclusions were committed before any Gemma run on evaluation instances. The changes that followed a 30-instance pilot (output parsing, prompt examples, at least two tool calls before G2 may answer) and a 200-instance G2 subsample chosen for budget reasons were logged before the evaluation runs. The evaluation set has 519 instances: 400 T2 instances in `main` (200 born-after, 328 independent), 19 curated OpenMinion instances reported separately because the authors filed and fixed those issues, and 100 T0 instances from older repositories.
 
 ## 5. Results
 
@@ -92,11 +92,15 @@ On the 200-instance G2 subsample, the agent is much weaker than the single-call 
 
 ## 6. Limitations
 
-The audit was done by one annotator who also wrote the pipeline; every error it found was fixed in code rather than relabelled. Gold is the fix that landed, so valid alternative locations count as misses; Hit@k softens this and Acc@k does not. The G2 subsample (200) and the T0 cell (100) limit statistical power, and T0 also contains older, terser issues, so tier and issue style are confounded there. Many issues name their own fix location, which is why we report the independent and no-mention subsets. Results use 4-bit QAT GGUF checkpoints served by Ollama, while the competition harness serves different quantized checkpoints, so absolute numbers may shift. The 19 OpenMinion instances come from issues the authors filed and fixed; they are analysed separately and never pooled.
+The gold audit was performed by an LLM-based research agent (Claude), the same assistant that wrote the pipeline, and no human checked its judgements, so the audit is not independent of the extractor it validates. Every error it found was fixed in code rather than relabelled. Gold is the fix that landed, so valid alternative locations count as misses; Hit@k softens this and Acc@k does not. The G2 subsample (200) and the T0 cell (100) limit statistical power, and T0 also contains older, terser issues, so tier and issue style are confounded there. Many issues name their own fix location, which is why we report the independent and no-mention subsets. Results use 4-bit QAT GGUF checkpoints served by Ollama, while the competition harness serves different quantized checkpoints, so absolute numbers may shift. The 19 OpenMinion instances come from issues the authors filed and fixed; they are analysed separately and never pooled.
 
 ## 7. Verifiability
 
 All code is released under Apache-2.0: the harvester, gold extraction, graph builder, baselines, Gemma runners and analysis, with 37 unit tests. The dataset holds the labels, issue text, flags, the audit sheet, and the evaluation, pilot and G2 id lists. We keep every model output with its token count and latency, the exact model tags and digests, pinned library versions, seeds and prompt templates. A public Kaggle notebook rebuilds every table, test and figure from the released outputs on CPU and checks each against the reference results; the kernel scripts that ran Gemma on a T4 are in the repository. The pre-registration and its deviation log are versioned with commit hashes.
+
+## AI assistance
+
+The pipeline code, the analyses and the drafting of this writeup were done with an AI coding and research assistant (Claude), directed and reviewed by the authors. The same assistant performed the gold audit described in §3.
 
 ## References
 

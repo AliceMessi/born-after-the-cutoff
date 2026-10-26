@@ -21,7 +21,7 @@ the cutoff, whose code the model cannot have seen.
 | `notebooks/agentloc-replay.ipynb` | CPU replay: rebuilds every table, test and figure from the released run outputs |
 | `tests/` | 37 unit tests (`pytest`) |
 | `PREREG.md` | Pre-registered hypotheses, strata, metrics and exclusions, with the deviation log (§8) |
-| `AUDIT.md` | The 60-instance gold audit: rubric, results, extractor bugs found and fixed |
+| `AUDIT.md` | The 60-instance gold audit (performed by an LLM-based research agent, Claude, without human review): rubric, results, extractor bugs found and fixed |
 | `WRITEUP.md`, `figures/` | The paper and its figures |
 
 `PREREG.md` points to "DESIGN.md §4" for the selection rules. That design note is not part of this
@@ -76,6 +76,11 @@ the dataset's `env/` folder.
   instance's `base_commit`.
 - No file from the Gemma 4 Developer Agent competition is included or read by this code. Four
   repositories the competition also uses were harvested independently from GitHub.
+
+## AI assistance
+
+The code, the analyses, the gold audit and the drafting of the paper were done with an AI coding and
+research assistant (Claude), directed and reviewed by the authors.
 
 ## Citation
 
