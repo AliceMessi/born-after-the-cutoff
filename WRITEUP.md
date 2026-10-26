@@ -13,7 +13,9 @@ Small local models must find *where* to change code before they can fix anything
 
 **Format.** We ship the tasks with graphs in the same NetworkX node-link layout the Gemma 4 Developer Agent competition documents publicly. We also provide no-LLM baselines (BM25, dense retrieval with EmbeddingGemma 2, and a repo-map PageRank) and four Gemma 4 methods.
 
-**Results.** On a pre-registered 519-instance evaluation set, a single-call graph rerank (G1) with Gemma 4 E4B reaches file Hit@1 0.80 and function Hit@10 0.80, against 0.56 and 0.71 for BM25. It beats an Agentless-style prompt by +0.23 function Hit@10 for both E2B and E4B (Holm-corrected p = 0.0002).
+**Results.** On a pre-registered 519-instance evaluation set, a single-call graph rerank (G1) with Gemma 4 E4B reaches file Hit@1 0.80 and function Hit@10 0.80, against 0.56 and 0.71 for BM25; 12B reaches 0.83 and 0.81.
+- G1 beats an Agentless-style prompt by +0.23 function Hit@10 for both E2B and E4B (Holm-corrected p = 0.0002).
+- G1 beats a 12-step tool-using graph agent at a tenth of the tokens.
 
 **Two pre-registered predictions failed, and we report them as such.** The graph's gain is not larger on unseen codebases, and a memorization probe shows no tier effect beyond guessability. An exploratory analysis, labelled as such, points to a codebase-familiarity effect that only the born-after split can expose.
 
@@ -145,31 +147,42 @@ The evaluation set has 519 instances:
 | P, E4B | 0.532 | 0.570 | – | 864 |
 | A, E4B | 0.653 | 0.813 | 0.614 | 7,938 |
 | **G1, E4B** | **0.801** | **0.896** | **0.797** | 3,063 |
-| P / A / G1, 12B | *[pending]* | | | |
-| G2, E2B / E4B / 12B (200-instance subsample) | *[pending]* | | | |
+| P, 12B | 0.561 | 0.609 | – | 868 |
+| A, 12B | 0.740 | 0.877 | 0.706 | 8,061 |
+| **G1, 12B** | **0.827** | **0.911** | **0.811** | 3,067 |
+
+On the 200-instance G2 subsample:
+
+| Method | File Hit@1 | File Hit@5 | Function Hit@10 | Median prompt tokens |
+|---|---|---|---|---|
+| B1 BM25 | 0.585 | 0.825 | 0.755 | 0 |
+| G1, E2B / E4B / 12B | 0.810 / 0.840 / 0.845 | 0.900 / 0.920 / 0.940 | 0.805 / 0.825 / 0.840 | about 3.1k |
+| G2, E2B / E4B | 0.580 / 0.750 | 0.600 / 0.780 | 0.365 / 0.465 | 26.6k / 33.9k |
+| G2, 12B | *[pending]* | | | |
 
 - G1 is the strongest method in every subset. That includes issues that name no gold file, where G1 with E4B scores file Hit@1 0.717 against 0.450 for BM25.
-- G1 needs fewer than half of A's tokens: about 1.6 s per instance for E2B and 2.8 s for E4B on a T4.
+- G1 needs fewer than half of A's tokens: about 1.6 s per instance for E2B, 2.8 s for E4B and 9.2 s for 12B on a T4.
+- **The G2 agent is far weaker and costlier than the single-call rerank, even though 86% (E2B) and 97% (E4B) of its tool calls are valid.** Small models stop exploring early and name few functions.
 
 **Pre-registered hypotheses**
 
 - **H1, memory beyond guessability: not supported.** We tested whether the probe's margin over the path-only control is larger for old-repository T0 issues than for born-after T2 issues.
-  - The difference is −0.115 for E2B (CI −0.255 to 0.060) and −0.125 for E4B (CI −0.271 to 0.053).
+  - The difference is −0.115 for E2B, −0.125 for E4B and −0.060 for 12B, and every CI includes 0.
   - The probe's success tracks file names written in the issue, which T2 issues contain more often.
 - **H2, graph helps: supported.** On independent ∩ main (n = 325), G1 beats A on function Hit@10: 0.785 vs 0.551 for E2B and 0.840 vs 0.612 for E4B, with Holm p = 0.0002.
   - **The predicted larger gain on born-after repositories was not observed:** the interaction is −0.048, with CIs spanning 0.
-- **H3, the gain shrinks with size:** G1 − A is 0.210 for E2B and 0.203 for E4B. *[12B pending]*
-- **H4, Pareto:** on the G2 subsample, G1 with E2B reaches function Hit@10 0.805 at 3.1k median tokens, against 0.580 at 8.6k for A. *[G2 pending]*
+- **H3, the gain shrinks with size (descriptive): observed.** G1 − A is 0.210 for E2B, 0.203 for E4B and 0.129 for 12B (CI 0.077–0.190). 12B's Agentless prompt closes part of the gap.
+- **H4, Pareto: supported.** On the G2 subsample, G1 with E2B reaches function Hit@10 0.805 at 3.1k median tokens. That beats G2 (0.365 at 26.6k) and A (0.580 at 8.6k).
 - **H5, lexical cues:** identifier masking cuts BM25's file Hit@5 by 0.39–0.41 whether or not the issue names the file (no interaction). *[A with E4B pending]*
 
 **Exploratory, not pre-registered.** We restricted the probe to T2 issues that name no gold file, so issue dates are comparable and the obvious lexical cue is removed.
 
-| Repositories | n | Probe file Hit@5 | Path-only control Hit@5 |
+| Repositories | n | Probe file Hit@5, E2B / E4B / 12B | Path-only control Hit@5 |
 |---|---|---|---|
-| Old | 86 | 0.384 | 0.605 |
-| Born-after | 91 | 0.176 | 0.538 |
+| Old | 86 | 0.384 / 0.360 / 0.419 | 0.605 |
+| Born-after | 91 | 0.176 / 0.198 / 0.242 | 0.538 |
 
-Without seeing the repository, the model guesses files about twice as well in long-established codebases, while the path-only control differs far less. This is the familiarity confound that a date-only split cannot remove and that the born-after control is designed to measure.
+Without seeing the repository, all three models guess files markedly better in long-established codebases (+0.16 to +0.21), while the path-only control differs by +0.07. This is the familiarity confound that a date-only split cannot remove and that the born-after control is designed to measure.
 
 ## 6. Limitations
 

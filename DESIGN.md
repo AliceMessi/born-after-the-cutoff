@@ -632,6 +632,18 @@ Results are in `data/v0.1/results/eval_retrieval.md` and `full_retrieval.md`. RM
 
 With issues of the same period, the model guesses files twice as well in familiar codebases (+0.21), while the path control differs much less (+0.07). This is the codebase-familiarity effect that the born-after control was designed to expose. The pre-registered T0-vs-born-after contrast mixes in older, terser issues and cannot show it.
 
+### 13.4e Step 3, update (26/10): 12B and G2
+
+The full numbers are in `WRITEUP.md` §5 and `data/v0.1/results/{eval_12b,g2_subsample}.md`.
+- **12B** (digest 38044be4…): G1 reaches file Hit@1 0.827, file Hit@5 0.911 and function Hit@10 0.811. A reaches 0.740, 0.877 and 0.706.
+- **G2** (200-instance subsample): function Hit@10 is 0.365 for E2B and 0.465 for E4B, against 0.805 and 0.825 for G1. G2 uses 27–34k median tokens; 86% (E2B) and 97% (E4B) of its tool calls are valid.
+- **Hypotheses:**
+  - H1 is not supported for any model (12B −0.06 [−0.21, 0.11]).
+  - H3 shows the predicted monotonic shrink: 0.210, 0.203, 0.129.
+  - H4 is supported: G1 dominates G2.
+- **Exploratory familiarity gap** (no-mention T2 issues, probe P): +0.21 for E2B, +0.16 for E4B and +0.18 for 12B, against +0.07 for the path control.
+- **Still running at 05:15 on 26/10:** `agentloc-gemma-g2-12b` and `agentloc-gemma-amask-e4b` (H5, A part).
+
 ## References
 
 1. Jimenez et al., *SWE-bench: Can Language Models Resolve Real-World GitHub Issues?*, ICLR 2024. https://arxiv.org/abs/2310.06770
