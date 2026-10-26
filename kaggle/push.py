@@ -7,7 +7,10 @@ kernel-metadata.json with is_private=true.
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from owner import owner  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 SLUG_PREFIX = "agentloc-"
@@ -32,10 +35,10 @@ def main() -> None:
     header = f"CONFIG = {cfg!r}\n" if cfg else ""
     (build / "run.py").write_text(header + common + "\n\n# ---- kernel ----\n" + run, encoding="utf-8")
     meta = {
-        "id": f"<kaggle-user>/{slug}", "title": slug, "code_file": "run.py", "language": "python",
+        "id": f"{owner()}/{slug}", "title": slug, "code_file": "run.py", "language": "python",
         "kernel_type": "script", "is_private": True, "enable_gpu": args.gpu, "enable_internet": True,
-        "dataset_sources": ["<kaggle-user>/agentloc-v01-private"], "competition_sources": [],
-        "kernel_sources": [f"<kaggle-user>/{k}" for k in args.kernel_source], "model_sources": [],
+        "dataset_sources": [f"{owner()}/agentloc-v01-private"], "competition_sources": [],
+        "kernel_sources": [f"{owner()}/{k}" for k in args.kernel_source], "model_sources": [],
     }
     if args.gpu:
         meta["machine_shape"] = "NvidiaTeslaT4"

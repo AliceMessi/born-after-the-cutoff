@@ -28,3 +28,9 @@ competition_local/
 # Kaggle page text (not ours to redistribute)
 rules.txt
 .pytest_cache/
+
+# Local Kaggle account name (read by kaggle/owner.py)
+kaggle/owner.local
+
+# Staging of the public release, built by kaggle/build_public.py and reviewed before publication
+release_public/

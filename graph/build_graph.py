@@ -6,8 +6,7 @@ Schema as published on the competition data page (visible without joining):
 Node ids are fully qualified dotted symbols (module, class, function/method),
 e.g. `fastapi.routing._prepare_response_content`. Extra node fields we add
 (`type`, `file`, `start_line`, `end_line`) are ignored by NetworkX consumers.
-STATUS: compatibility with the competition's own graph files is UNVERIFIED
-(needs main-track data access); see DESIGN.md.
+Compatibility is claimed only for these publicly documented fields.
 
 Edge types: contains (module->class/function, class->method), imports
 (module->module/symbol), calls (function/method->function/method/class),

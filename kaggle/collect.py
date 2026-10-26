@@ -10,6 +10,8 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from owner import owner  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "kaggle_out"
@@ -18,7 +20,7 @@ RUNS = ROOT / "data" / "v0.1" / "runs"
 
 def main() -> None:
     for slug in sys.argv[1:]:
-        st = subprocess.run(["kaggle", "kernels", "status", f"<kaggle-user>/agentloc-{slug}"], capture_output=True, text=True)
+        st = subprocess.run(["kaggle", "kernels", "status", f"{owner()}/agentloc-{slug}"], capture_output=True, text=True)
         status = (st.stdout + st.stderr).strip()
         if "COMPLETE" not in status:
             print(f"{slug}: {status.split('status')[-1].strip()}")
@@ -26,7 +28,7 @@ def main() -> None:
         dest = OUT / slug
         shutil.rmtree(dest, ignore_errors=True)
         dest.mkdir(parents=True)
-        subprocess.run(["kaggle", "kernels", "output", f"<kaggle-user>/agentloc-{slug}", "-p", str(dest)],
+        subprocess.run(["kaggle", "kernels", "output", f"{owner()}/agentloc-{slug}", "-p", str(dest)],
                        capture_output=True, text=True)
         for big in list(dest.rglob("*.sqlite")) + list(dest.rglob("ollama.log")):
             big.unlink()

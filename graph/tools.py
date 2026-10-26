@@ -6,8 +6,7 @@
 
 Signatures follow the competition's public "Model Selection, Budget, and
 Harness Rules" text. The *return-string format* of the official tools is not
-public without joining the main track, so ours return compact JSON; marked
-PENDING in DESIGN.md until it can be compared with HARNESS_README.md.
+public without joining the main track, so ours return compact JSON.
 
 search_similar_code uses precomputed node embeddings when given (cosine,
 like the competition's 256-d embeddings); otherwise it falls back to BM25

@@ -12,6 +12,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from owner import owner  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -29,7 +31,7 @@ WATCH = ["gemma-e4b", "gemma-e2b"]  # already running
 
 
 def status(slug: str) -> str:
-    p = subprocess.run(["kaggle", "kernels", "status", f"<kaggle-user>/agentloc-{slug}"], capture_output=True, text=True)
+    p = subprocess.run(["kaggle", "kernels", "status", f"{owner()}/agentloc-{slug}"], capture_output=True, text=True)
     return (p.stdout + p.stderr).strip()
 
 

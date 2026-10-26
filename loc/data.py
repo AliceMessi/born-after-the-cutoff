@@ -26,7 +26,22 @@ def is_independent(r: dict) -> bool:
     return (not r["same_author"]) and r["issue_to_fix_hours"] >= 24 and not r["flags"]["issue_quotes_added_code"]
 
 
+def load_release(release_dir: Path = V01 / "release") -> list[dict]:
+    """Public layout: labels from instances.jsonl, masked issue text from issues.jsonl."""
+    texts = {}
+    if (release_dir / "issues.jsonl").exists():
+        texts = {r["instance_id"]: (r["title"], r["body"]) for r in read_jsonl(release_dir / "issues.jsonl")}
+    out = []
+    for g in read_jsonl(release_dir / "instances.jsonl"):
+        title, body = texts.get(g["instance_id"], ("", ""))
+        g["problem_statement"] = title + chr(10) * 2 + body
+        out.append(g)
+    return out
+
+
 def load(gold_path: Path = V01 / "gold.jsonl", raw_dir: Path = V01 / "raw") -> list[dict]:
+    if not gold_path.exists() and (V01 / "release" / "instances.jsonl").exists():
+        return load_release()
     texts = {}
     for f in raw_dir.glob("*.candidates.jsonl"):
         for r in read_jsonl(f):

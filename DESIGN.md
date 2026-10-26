@@ -619,9 +619,9 @@ Results are in `data/v0.1/results/eval_retrieval.md` and `full_retrieval.md`. RM
 **Pre-registered tests so far** (`loc/analysis.py`; 12B, G2 and A-masked still running):
 - **H2 supported for both E2B and E4B.** On independent ∩ main (n = 325), function Hit@10 is G1 0.785 vs A 0.551 for E2B and G1 0.840 vs A 0.612 for E4B. Paired permutation test, Holm-corrected p = 0.0002 for both.
   - The second clause, a larger gain on born-after repositories, is **not supported**: interaction −0.048 for both models (CI around 0).
-- **H3** (descriptive): G1 − A = 0.210 [0.141, 0.289] for E2B and 0.203 [0.150, 0.257] for E4B. 12B is pending.
+- **H3** (descriptive): G1 − A = 0.210 [0.141, 0.289] for E2B and 0.203 [0.150, 0.257] for E4B. 12B is pending (final in §13.4e).
 - **H1 not supported** for E2B or E4B. The diff-of-diffs is −0.115 and −0.125, and both CIs include 0. The probe's apparent success comes from file names stated in the issue, which T2 issues contain more often than T0 issues.
-- **H5, B1 part:** masking costs 0.39–0.41 file Hit@5 both with and without a file mention (interaction −0.01, CI includes 0). The A-e4b part is pending.
+- **H5, B1 part:** masking costs 0.39–0.41 file Hit@5 both with and without a file mention (interaction −0.01, CI includes 0). The A-e4b part is pending (final in §13.4e).
 
 **Exploratory, not pre-registered** (labelled as such in the paper). On T2 issues that name no gold file, the issue-only probe (E2B) scores:
 
@@ -642,7 +642,11 @@ The full numbers are in `WRITEUP.md` §5 and `data/v0.1/results/{eval_12b,g2_sub
   - H3 shows the predicted monotonic shrink: 0.210, 0.203, 0.129.
   - H4 is supported: G1 dominates G2.
 - **Exploratory familiarity gap** (no-mention T2 issues, probe P): +0.21 for E2B, +0.16 for E4B and +0.18 for 12B, against +0.07 for the path control.
-- **Still running at 05:15 on 26/10:** `agentloc-gemma-g2-12b` and `agentloc-gemma-amask-e4b` (H5, A part).
+- **Final, 26/10 (all step-3 kernels collected).**
+  - **H5, A part** (`agentloc-gemma-amask-e4b`, `main`, n = 400): masking cuts A-e4b file Hit@5 from 0.825 to 0.422. The drop is 0.46 when the issue names the gold file and 0.33 when it does not; the interaction is 0.134 [−0.028, 0.282], so H5 is **not supported** for A either. BM25 falls from 0.853 to 0.453, with drops of 0.39 and 0.41 (interaction −0.012 [−0.127, 0.098]).
+  - **G2 with 12B** (`agentloc-gemma-g2-12b`, digest 38044be4…, 3.7 GPU-hours of model time): function Hit@10 0.355 on the 200-instance subsample, below E4B (0.465) and far below G1-12b (0.840). Its tool calls are 99% valid and it explores longer (median 11 tool calls), but 98 of 200 runs reach the 12-step cap without naming a function, at a median of 99.1k prompt tokens. On the 102 runs that answered, function Hit@10 is 0.696 against 0.843 for G1-12b on the same instances (exploratory, not pre-registered). H4 is defined for E2B only and is unchanged; re-running `loc/analysis.py` with this file leaves `hypotheses.json` byte-identical.
+  - **Final pre-registered verdicts:** H1 not supported (all three models); H2 supported for the main clause (G1 > A, Holm p = 0.0002 for E2B and E4B), not for the born-after interaction; H3 holds descriptively (0.210, 0.203, 0.129); H4 supported (G1 dominates G2 for E2B); H5 not supported (B1 and A).
+  - **GPU quota** after all runs: 23.64 h used, 6.36 h left until the 31/10 reset.
 
 ## References
 

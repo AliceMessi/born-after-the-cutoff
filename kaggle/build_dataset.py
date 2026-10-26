@@ -1,4 +1,4 @@
-"""Build the PRIVATE Kaggle working dataset `<kaggle-user>/agentloc-v01-private`.
+"""Build the PRIVATE Kaggle working dataset `<owner>/agentloc-v01-private`.
 
 Contents (our own harvest only; no Competition Data):
   project.zip  harvest/, loc/, graph/ code, plus data/v0.1/{gold.jsonl, eval_ids.txt,
@@ -15,6 +15,8 @@ import json
 import sys
 import zipfile
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from owner import owner  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "loc"))
@@ -45,7 +47,7 @@ def main() -> None:
         z.writestr("project/data/v0.1/raw/texts.candidates.jsonl", chr(10).join(text_lines) + chr(10))
     (OUT / "dataset-metadata.json").write_text(json.dumps({
         "title": SLUG,
-        "id": f"<kaggle-user>/{SLUG}",
+        "id": f"{owner()}/{SLUG}",
         "licenses": [{"name": "other"}],
         "subtitle": "Private working set for a localization benchmark (own GitHub harvest)",
     }, indent=1), encoding="utf-8")

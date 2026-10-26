@@ -12,6 +12,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from owner import owner  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -35,7 +37,7 @@ def log(msg: str) -> None:
 
 
 def status(slug: str) -> str:
-    p = subprocess.run(["kaggle", "kernels", "status", f"<kaggle-user>/agentloc-{slug}"], capture_output=True, text=True)
+    p = subprocess.run(["kaggle", "kernels", "status", f"{owner()}/agentloc-{slug}"], capture_output=True, text=True)
     out = p.stdout + p.stderr
     for s in ("RUNNING", "COMPLETE", "QUEUED", "ERROR", "CANCEL", "NEW"):
         if s in out:

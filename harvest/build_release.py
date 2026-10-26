@@ -30,8 +30,37 @@ LABEL_FIELDS = [
 ]
 
 
+_BS = re.escape(chr(92))  # a literal backslash, kept out of the source text
+# home-directory user names in pasted tracebacks: /Users/<name>/, /home/<name>/, C:\Users\<name>\
+HOME = re.compile("(?i)(/Users/|/home/|[A-Z]:" + _BS + "+Users" + _BS + "+)([^/" + _BS + "\\s\"'`<>]+)")
+
+
+# credential-like strings pasted into issues (placeholders included): PEM private keys, well-known
+# key prefixes, and long letter+digit values assigned to key/secret/token/password names
+PEM = re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----.*?-----END [A-Z ]*PRIVATE KEY-----", re.S)
+KEY_PREFIX = re.compile(r"\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{20,}"
+                        r"|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-[A-Za-z0-9-]{10,})")
+KEY_VALUE = re.compile(r"(?i)\b((?:api[_-]?key|secret|token|password|passwd)[\w-]*['\"]?\s*[:=]\s*['\"]?)"
+                       r"([A-Za-z0-9_+/=-]{16,})")
+
+
+def _value(m: re.Match) -> str:
+    v = m.group(2)
+    secret_like = any(c.isdigit() for c in v) and any(c.isalpha() for c in v)
+    return m.group(1) + "[redacted]" if secret_like else m.group(0)
+
+
+def redact_credentials(text: str) -> str:
+    text = PEM.sub("[private key removed]", text)
+    text = KEY_PREFIX.sub("[redacted-key]", text)
+    return KEY_VALUE.sub(_value, text)
+
+
 def mask(text: str) -> str:
-    return MENTION.sub("@[user]", EMAIL.sub("[email]", text or ""))
+    text = EMAIL.sub("[email]", text or "")
+    text = HOME.sub(lambda m: m.group(1) + "[user]", text)
+    text = redact_credentials(text)
+    return MENTION.sub("@[user]", text)
 
 
 def main() -> None:
