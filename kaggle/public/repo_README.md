@@ -21,11 +21,14 @@ the cutoff, whose code the model cannot have seen.
 | `notebooks/agentloc-replay.ipynb` | CPU replay: rebuilds every table, test and figure from the released run outputs |
 | `tests/` | 37 unit tests (`pytest`) |
 | `PREREG.md` | Pre-registered hypotheses, strata, metrics and exclusions, with the deviation log (§8) |
+| `DESIGN.md` | The working design note: research questions, data construction, methods, feasibility checks and step-by-step results |
 | `AUDIT.md` | The 60-instance gold audit (performed by an LLM-based research agent, Claude, without human review): rubric, results, extractor bugs found and fixed |
 | `WRITEUP.md`, `figures/` | The paper and its figures |
 
-`PREREG.md` points to "DESIGN.md §4" for the selection rules. That design note is not part of this
-repository; the same rules are stated in `WRITEUP.md` §3 and implemented in `harvest/harvest.py`.
+`DESIGN.md` is the working design note, kept with its full history so the order of design,
+pre-registration and runs can be checked. Internal project-management passages (account names,
+approvals, the publishing plan) were removed from every revision before publication; author dates
+are unchanged.
 
 ## Reproduce
 

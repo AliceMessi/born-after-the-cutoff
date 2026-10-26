@@ -23,8 +23,11 @@ def main() -> None:
     ap.add_argument("--push", action="store_true")
     ap.add_argument("--kernel-source", action="append", default=[], help="our own kernel whose output is mounted")
     ap.add_argument("--config", default="", help="JSON injected as CONFIG; its 'slug' names the kernel")
+    ap.add_argument("--config-file", default="", help="read the CONFIG JSON from this file instead")
     args = ap.parse_args()
     src = HERE / args.kernel
+    if args.config_file:
+        args.config = Path(args.config_file).read_text(encoding="utf-8")
     cfg = json.loads(args.config) if args.config else {}
     slug = SLUG_PREFIX + (cfg.get("slug") or args.kernel.replace("_", "-"))
     build = HERE.parent / "data" / "kaggle_kernels" / slug

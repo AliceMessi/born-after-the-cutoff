@@ -15,6 +15,8 @@ cutoff.
 - A 60-instance audit, performed by an LLM-based research agent (Claude) without human review, found the
   gold labels correct for 57 (95.0%).
 
+**Licence:** CC BY 4.0 for the dataset. The code copy in `code/` is Apache-2.0.
+
 This dataset holds every run output and reference result behind the accompanying paper, so all of
 its tables and figures can be rebuilt on CPU with the replay notebook.
 

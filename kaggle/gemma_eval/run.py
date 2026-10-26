@@ -15,6 +15,10 @@ from common import OUT, P, record_env, save_runs, setup, sh
 URL = "http://127.0.0.1:11434"
 setup()
 os.makedirs("data/v0.1/runs", exist_ok=True)
+if CONFIG.get("id_list"):  # ids passed inline in CONFIG, so no dataset version is needed
+    CONFIG["ids"] = f"data/v0.1/ids_{CONFIG['tag']}.txt"
+    with open(CONFIG["ids"], "w") as fh:
+        fh.write(chr(10).join(CONFIG["id_list"]) + chr(10))
 for name in ["B2-embeddinggemma-2.jsonl"] + [f"{m}-{CONFIG['tag']}.jsonl" for m in ("P", "A", "G1", "G2")]:
     for f in glob.glob(f"/kaggle/input/**/{name}", recursive=True)[:1]:   # seeds and partial runs to resume
         shutil.copy(f, f"data/v0.1/runs/{name}")

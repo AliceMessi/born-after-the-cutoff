@@ -647,6 +647,10 @@ The full numbers are in `WRITEUP.md` §5 and `data/v0.1/results/{eval_12b,g2_sub
   - **G2 with 12B** (`agentloc-gemma-g2-12b`, digest 38044be4…, 3.7 GPU-hours of model time): function Hit@10 0.355 on the 200-instance subsample, below E4B (0.465) and far below G1-12b (0.840). Its tool calls are 99% valid and it explores longer (median 11 tool calls), but 98 of 200 runs reach the 12-step cap without naming a function, at a median of 99.1k prompt tokens. On the 102 runs that answered, function Hit@10 is 0.696 against 0.843 for G1-12b on the same instances (exploratory, not pre-registered). H4 is defined for E2B only and is unchanged; re-running `loc/analysis.py` with this file leaves `hypotheses.json` byte-identical.
   - **Final pre-registered verdicts:** H1 not supported (all three models); H2 supported for the main clause (G1 > A, Holm p = 0.0002 for E2B and E4B), not for the born-after interaction; H3 holds descriptively (0.210, 0.203, 0.129); H4 supported (G1 dominates G2 for E2B); H5 not supported (B1 and A).
   - **GPU quota** after all runs: 23.64 h used, 6.36 h left until the 31/10 reset.
+- **Optional, not pre-registered as a test: Gemma 4 26B-A4B** (`gemma4:26b-a4b-it-qat`: 14.4 GB of weights plus a 1.2 GB projector, so Ollama splits it over both T4s).
+  - Config `kaggle/configs/gemma-26b.json`: P, A and G1 on 150 ids drawn from the G2 subsample (75 born-after, 75 old; `harvest/select_subsample.py --seed 0`), with a 6 h budget. The ids travel inline in the config, so the private dataset needs no new version.
+  - Push after the quota reset on 31/10 00:00 UTC: `python -I kaggle/push.py gemma_eval --gpu --kernel-source agentloc-b2-dense --config-file kaggle/configs/gemma-26b.json --push`.
+  - Results will be labelled optional and descriptive (one more point on the H3 size trend, paired on the same 150 instances) and never pooled into the pre-registered tests.
 
 ## References
 
