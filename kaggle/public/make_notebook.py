@@ -16,7 +16,8 @@ It needs no GPU and no internet: every number comes from the files in the datase
 code (`code/loc/`) that produced the paper.
 
 Steps:
-1. find the dataset and check every file against `MANIFEST.sha256`;
+1. find the dataset and check every file against `MANIFEST.sha256` (Kaggle stores the gzipped graphs
+   decompressed, as `graphs/<name>.json/<name>.json`; those are checked against `MANIFEST.graphs-json.sha256`);
 2. lay the files out the way the scoring code expects;
 3. re-score every run file (repository-clustered bootstrap, 1,000 resamples, seed 0);
 4. re-run the pre-registered hypothesis analysis and the figure script;
@@ -40,13 +41,43 @@ DATA = find_dataset()
 WORK = Path("/kaggle/working/agentloc") if Path("/kaggle/working").exists() else Path.cwd() / "agentloc_work"
 print("dataset:", DATA)
 print("work dir:", WORK)"""),
-    ("code", """bad = []
-lines = (DATA / "MANIFEST.sha256").read_text(encoding="utf-8").split(chr(10))
-for line in filter(None, lines):
-    digest, rel = line.split("  ", 1)
-    if hashlib.sha256((DATA / rel).read_bytes()).hexdigest() != digest:
+    ("code", """def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for block in iter(lambda: fh.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+def read_manifest(path):
+    rows = {}
+    if path.is_file():
+        for line in filter(None, path.read_text(encoding="utf-8").split(chr(10))):
+            digest, rel = line.split("  ", 1)
+            rows[rel] = digest
+    return rows
+
+# MANIFEST.sha256 lists every file as built, graphs as graphs/<name>.json.gz. Kaggle stores those
+# decompressed as graphs/<name>.json/<name>.json, checked against MANIFEST.graphs-json.sha256.
+# A file that is missing in both layouts, or whose digest differs, counts as a mismatch.
+manifest = read_manifest(DATA / "MANIFEST.sha256")
+graphs_json = read_manifest(DATA / "MANIFEST.graphs-json.sha256")
+bad, layout = [], {"gz": 0, "decompressed": 0}
+for rel, digest in manifest.items():
+    path = DATA / rel
+    if path.is_file():
+        ok = sha256_file(path) == digest
+        layout["gz"] += rel.startswith("graphs/") and rel.endswith(".json.gz")
+    elif rel.startswith("graphs/") and rel.endswith(".json.gz"):
+        name = rel[len("graphs/"):-len(".gz")]
+        alt = f"graphs/{name}/{name}"
+        ok = alt in graphs_json and (DATA / alt).is_file() and sha256_file(DATA / alt) == graphs_json[alt]
+        layout["decompressed"] += 1
+    else:
+        ok = False
+    if not ok:
         bad.append(rel)
-print(f"{len(lines) - 1} files checked, {len(bad)} mismatches", bad[:5])"""),
+print(f"{len(manifest)} files checked, {len(bad)} mismatches", bad[:5])
+print("graph files:", layout)"""),
     ("code", """# The scoring code expects data/v0.1/{release,runs,...} next to loc/.
 shutil.rmtree(WORK, ignore_errors=True)
 V01 = WORK / "data" / "v0.1"
@@ -137,18 +168,32 @@ for m, v in hy["H5"].items():
 for f in ("fig1_results.png", "fig2_familiarity.png"):
     display(Image(filename=str(WORK / "figures" / f)))"""),
     ("code", """# Code graphs: NetworkX node-link JSON without node text (upstream source code is not redistributed).
+# Either layout: graphs/<name>.json.gz (as built) or graphs/<name>.json/<name>.json (as Kaggle stores it).
 import gzip
-graphs = sorted((DATA / "graphs").glob("*.json.gz"))
+
+def graph_files(root):
+    out = []
+    for p in sorted(root.iterdir()):
+        if p.is_file() and p.name.endswith(".json.gz"):
+            out.append((p.name, p, True))
+        elif p.is_dir() and (p / p.name).is_file():
+            out.append((p.name, p / p.name, False))
+    return out
+
+def load_graph(path, gz):
+    with (gzip.open(path, "rt", encoding="utf-8") if gz else open(path, encoding="utf-8")) as fh:
+        return json.load(fh)
+
+graphs = graph_files(DATA / "graphs")
 with_text = 0
-for g in graphs:
-    with gzip.open(g, "rt", encoding="utf-8") as fh:
-        G = json.load(fh)
+for name, path, gz in graphs:
+    G = load_graph(path, gz)
     with_text += any("text" in n for n in G["nodes"])
 print(len(graphs), "graphs;", with_text, "contain node text")
 if graphs:
-    with gzip.open(graphs[0], "rt", encoding="utf-8") as fh:
-        G = json.load(fh)
-    print(graphs[0].name, {k: G[k] for k in ("directed", "multigraph")}, len(G["nodes"]), "nodes", len(G["edges"]), "edges")
+    name, path, gz = graphs[0]
+    G = load_graph(path, gz)
+    print(name, {k: G[k] for k in ("directed", "multigraph")}, len(G["nodes"]), "nodes", len(G["edges"]), "edges")
     print("node fields:", sorted(G["nodes"][0]), "edge fields:", sorted(G["edges"][0]))"""),
     ("markdown", """To restore node text, clone the repository at the instance's `base_commit` and run
 `graph/build_graph.py` from the code repository; node ids and edges are deterministic for a given commit."""),

@@ -12,6 +12,7 @@ The GitHub repository is built separately from this project's filtered history.
 """
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 import os
@@ -77,6 +78,17 @@ def build_dataset() -> Path:
     copy(PUB / "LICENSE", ds / "code" / "LICENSE")
     (ds / "code" / "README.md").write_text(CODE_NOTE, encoding="utf-8")
     copy(PUB / "dataset_README.md", ds / "README.md")
+    # Kaggle stores each graphs/<name>.json.gz decompressed as graphs/<name>.json/<name>.json, so a
+    # second manifest holds the digests of the decompressed bytes at that path.
+    gj = []
+    for g in sorted((ds / "graphs").glob("*.json.gz")):
+        h = hashlib.sha256()
+        with gzip.open(g, "rb") as fh:
+            for block in iter(lambda: fh.read(1 << 20), b""):
+                h.update(block)
+        name = g.name[: -len(".gz")]
+        gj.append(f"{h.hexdigest()}  graphs/{name}/{name}")
+    (ds / "MANIFEST.graphs-json.sha256").write_text(chr(10).join(gj) + chr(10), encoding="utf-8")
     lines = []
     for p in sorted(x for x in ds.rglob("*") if x.is_file() and x.name != "MANIFEST.sha256"):
         lines.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(ds).as_posix()}")
