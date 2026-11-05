@@ -78,8 +78,8 @@ def build_dataset() -> Path:
     copy(PUB / "LICENSE", ds / "code" / "LICENSE")
     (ds / "code" / "README.md").write_text(CODE_NOTE, encoding="utf-8")
     copy(PUB / "dataset_README.md", ds / "README.md")
-    # Kaggle stores each graphs/<name>.json.gz decompressed as graphs/<name>.json/<name>.json, so a
-    # second manifest holds the digests of the decompressed bytes at that path.
+    # Kaggle stores each graphs/<name>.json.gz decompressed, as graphs/<name>.json or as
+    # graphs/<name>.json/<name>.json, so a second manifest holds the digests of the decompressed bytes.
     gj = []
     for g in sorted((ds / "graphs").glob("*.json.gz")):
         h = hashlib.sha256()

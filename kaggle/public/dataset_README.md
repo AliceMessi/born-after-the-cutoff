@@ -37,7 +37,7 @@ its tables and figures can be rebuilt on CPU with the replay notebook.
 | `graphs/` | Code graphs for the 519 evaluation instances at their base commit, without node text (see below) |
 | `code/` | A copy of the scoring and analysis code (`loc/`, Apache-2.0) used by the replay notebook |
 | `MANIFEST.sha256` | SHA-256 of every file as built, with the graphs as `graphs/<name>.json.gz` |
-| `MANIFEST.graphs-json.sha256` | SHA-256 of each graph's decompressed JSON at `graphs/<name>.json/<name>.json`: Kaggle stores the uploaded `.json.gz` graphs decompressed under that path, and the replay notebook accepts either layout |
+| `MANIFEST.graphs-json.sha256` | SHA-256 of each graph's decompressed JSON, listed as `graphs/<name>.json/<name>.json`: Kaggle stores the uploaded `.json.gz` graphs decompressed, as `graphs/<name>.json` or `graphs/<name>.json/<name>.json`, and the replay notebook accepts every layout |
 
 ### Instance fields
 

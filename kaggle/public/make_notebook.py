@@ -17,7 +17,8 @@ code (`code/loc/`) that produced the paper.
 
 Steps:
 1. find the dataset and check every file against `MANIFEST.sha256` (Kaggle stores the gzipped graphs
-   decompressed, as `graphs/<name>.json/<name>.json`; those are checked against `MANIFEST.graphs-json.sha256`);
+   decompressed, as `graphs/<name>.json` or `graphs/<name>.json/<name>.json`; those are checked against
+   `MANIFEST.graphs-json.sha256`);
 2. lay the files out the way the scoring code expects;
 3. re-score every run file (repository-clustered bootstrap, 1,000 resamples, seed 0);
 4. re-run the pre-registered hypothesis analysis and the figure script;
@@ -57,11 +58,12 @@ def read_manifest(path):
     return rows
 
 # MANIFEST.sha256 lists every file as built, graphs as graphs/<name>.json.gz. Kaggle stores those
-# decompressed as graphs/<name>.json/<name>.json, checked against MANIFEST.graphs-json.sha256.
-# A file that is missing in both layouts, or whose digest differs, counts as a mismatch.
+# decompressed, either as graphs/<name>.json or as graphs/<name>.json/<name>.json; the decompressed
+# bytes are checked against MANIFEST.graphs-json.sha256 (keyed graphs/<name>.json/<name>.json).
+# A graph found in none of the layouts, or whose digest differs, counts as a mismatch.
 manifest = read_manifest(DATA / "MANIFEST.sha256")
 graphs_json = read_manifest(DATA / "MANIFEST.graphs-json.sha256")
-bad, layout = [], {"gz": 0, "decompressed": 0}
+bad, layout = [], {"gz": 0, "json file": 0, "json in folder": 0}
 for rel, digest in manifest.items():
     path = DATA / rel
     if path.is_file():
@@ -69,9 +71,13 @@ for rel, digest in manifest.items():
         layout["gz"] += rel.startswith("graphs/") and rel.endswith(".json.gz")
     elif rel.startswith("graphs/") and rel.endswith(".json.gz"):
         name = rel[len("graphs/"):-len(".gz")]
-        alt = f"graphs/{name}/{name}"
-        ok = alt in graphs_json and (DATA / alt).is_file() and sha256_file(DATA / alt) == graphs_json[alt]
-        layout["decompressed"] += 1
+        key = f"graphs/{name}/{name}"
+        ok = False
+        for kind, alt in (("json in folder", DATA / "graphs" / name / name), ("json file", DATA / "graphs" / name)):
+            if alt.is_file():
+                ok = key in graphs_json and sha256_file(alt) == graphs_json[key]
+                layout[kind] += 1
+                break
     else:
         ok = False
     if not ok:
@@ -168,7 +174,8 @@ for m, v in hy["H5"].items():
 for f in ("fig1_results.png", "fig2_familiarity.png"):
     display(Image(filename=str(WORK / "figures" / f)))"""),
     ("code", """# Code graphs: NetworkX node-link JSON without node text (upstream source code is not redistributed).
-# Either layout: graphs/<name>.json.gz (as built) or graphs/<name>.json/<name>.json (as Kaggle stores it).
+# Any layout: graphs/<name>.json.gz (as built), or graphs/<name>.json or graphs/<name>.json/<name>.json
+# (as Kaggle stores it decompressed).
 import gzip
 
 def graph_files(root):
@@ -176,6 +183,8 @@ def graph_files(root):
     for p in sorted(root.iterdir()):
         if p.is_file() and p.name.endswith(".json.gz"):
             out.append((p.name, p, True))
+        elif p.is_file() and p.name.endswith(".json"):
+            out.append((p.name, p, False))
         elif p.is_dir() and (p / p.name).is_file():
             out.append((p.name, p / p.name, False))
     return out
