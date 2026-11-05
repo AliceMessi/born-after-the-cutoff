@@ -29,7 +29,7 @@ OUT = ROOT / "release_public"
 PUB = ROOT / "kaggle" / "public"          # hand-written public texts (README files, notebook source)
 KOUT = ROOT / "data" / "kaggle_out"
 DATASET_SLUG = "born-after-the-cutoff"
-NOTEBOOK_SLUG = "born-after-the-cutoff-replay"
+NOTEBOOK_SLUG = "born-after-the-cutoff-cpu-replay"
 
 ID_FILES = ["all_ids.txt", "eval_ids.txt", "main_ids.txt", "g2_ids.txt", "pilot_ids.txt", "pilot_g2_ids.txt",
             "audit_ids.txt", "audit_exclusions.txt", "eval_manifest.json", "ids_26b.txt"]
