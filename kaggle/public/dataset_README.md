@@ -27,9 +27,9 @@ its tables and figures can be rebuilt on CPU with the replay notebook.
 | `instances.jsonl` | One record per instance: labels and metadata, no issue text (fields below) |
 | `issues.jsonl` | Issue title and body, with @mentions, e-mail addresses, home-directory user names and credential-like strings (9 records) masked, plus `source_url`. The models saw the unmasked text |
 | `stats.json` | Composition and harvest funnel per repository |
-| `splits/` | Id lists: `eval_ids.txt` (519 pre-registered evaluation ids), `main_ids.txt` (400 T2 ids), `g2_ids.txt` (200-id agent subsample), `pilot_ids.txt`, `pilot_g2_ids.txt`, `audit_ids.txt`, `audit_exclusions.txt`, `all_ids.txt`, `eval_manifest.json` (strata and seed) |
+| `splits/` | Id lists: `eval_ids.txt` (519 pre-registered evaluation ids), `main_ids.txt` (400 T2 ids), `g2_ids.txt` (200-id agent subsample), `ids_26b.txt` (150 ids of the optional, not pre-registered 26B-A4B run, drawn from the G2 subsample), `pilot_ids.txt`, `pilot_g2_ids.txt`, `audit_ids.txt`, `audit_exclusions.txt`, `all_ids.txt`, `eval_manifest.json` (strata and seed) |
 | `audit.jsonl` | The 60-instance gold audit: per-instance verdicts and a short note |
-| `runs/` | Ranked predictions of every method on the evaluation set, with token counts and latency for the Gemma runs |
+| `runs/` | Ranked predictions of every method on the evaluation set, with token counts and latency for the Gemma runs; the `*-26b` files cover `ids_26b.txt` only |
 | `runs_full/` | R0 and BM25 rankings on all 4,097 instances |
 | `runs_pilot/` | Outputs of the 30-instance pilot that fixed parsing and prompts before the evaluation runs |
 | `results/` | Reference results: per-method metrics with bootstrap CIs, hypothesis tests, figure values, graph reachability |

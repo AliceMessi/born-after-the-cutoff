@@ -649,8 +649,29 @@ The full numbers are in `WRITEUP.md` §5 and `data/v0.1/results/{eval_12b,g2_sub
   - **GPU quota** after all runs: 23.64 h used, 6.36 h left until the 31/10 reset.
 - **Optional, not pre-registered as a test: Gemma 4 26B-A4B** (`gemma4:26b-a4b-it-qat`: 14.4 GB of weights plus a 1.2 GB projector, so Ollama splits it over both T4s).
   - Config `kaggle/configs/gemma-26b.json`: P, A and G1 on 150 ids drawn from the G2 subsample (75 born-after, 75 old; `harvest/select_subsample.py --seed 0`), with a 6 h budget. The ids travel inline in the config, so the private dataset needs no new version.
-  - Push after the quota reset on 31/10 00:00 UTC: `python -I kaggle/push.py gemma_eval --gpu --kernel-source agentloc-b2-dense --config-file kaggle/configs/gemma-26b.json --push`.
-  - Results will be labelled optional and descriptive (one more point on the H3 size trend, paired on the same 150 instances) and never pooled into the pre-registered tests.
+  - Pushed after the quota reset on 31/10 00:00 UTC: `python -I kaggle/push.py gemma_eval --gpu --kernel-source agentloc-b2-dense --config-file kaggle/configs/gemma-26b.json --push`.
+  - Ran as `agentloc-gemma-26b`, collected 05/11 (`python -I kaggle/collect.py gemma-26b`): Ollama 0.40.11, digest 2dd70431…, 2×T4, thinking off, prompts unchanged. Kernel time about 55 min (P 675 s, A 1,478 s, G1 888 s); 150 rows per method and no run errors; answers with no parsable file: P 42 (12B: 38), A 5 (12B: 0), G1 1 (12B: 3).
+- **Result, 05/11: optional, not pre-registered** (`data/v0.1/results/eval_26b.md`, `loc/evaluate.py --ids-file data/v0.1/ids_26b.txt --name eval_26b`). Descriptive only; it is not part of H1–H5, it is not pooled with the 519-instance tables, and the pre-registered verdicts above are unchanged. All four sizes are paired on the same 150 ids; CIs are the repository-clustered 95% bootstrap intervals printed by `loc/evaluate.py`.
+
+  | Method | File Hit@1 | File Hit@5 | Function Hit@10 | Median prompt tokens | Median s/instance |
+  |---|---|---|---|---|---|
+  | B1 BM25 | 0.573 [0.45, 0.68] | 0.820 [0.77, 0.89] | 0.740 [0.67, 0.80] | 0 | – |
+  | RM | 0.513 [0.39, 0.62] | 0.833 [0.78, 0.89] | 0.680 [0.59, 0.77] | 0 | – |
+  | P, 12B / 26B | 0.580 / 0.573 | 0.620 / 0.633 | – | 882 / 882 | 5.0 / 2.3 |
+  | A, E2B | 0.613 [0.52, 0.70] | 0.800 [0.70, 0.88] | 0.547 [0.44, 0.64] | 8,916 | 5.2 |
+  | A, E4B | 0.653 [0.55, 0.75] | 0.827 [0.73, 0.90] | 0.600 [0.50, 0.70] | 8,653 | 8.9 |
+  | A, 12B | 0.787 [0.70, 0.86] | 0.867 [0.78, 0.94] | 0.720 [0.64, 0.79] | 8,816 | 21.9 |
+  | A, 26B-A4B | 0.767 [0.67, 0.85] | 0.880 [0.79, 0.96] | 0.667 [0.57, 0.75] | 8,677 | 9.3 |
+  | G1, E2B | 0.833 [0.78, 0.89] | 0.913 [0.87, 0.96] | 0.800 [0.73, 0.87] | 3,084 | 1.7 |
+  | G1, E4B | 0.860 [0.80, 0.91] | 0.933 [0.89, 0.97] | 0.827 [0.75, 0.89] | 3,084 | 2.8 |
+  | G1, 12B | 0.853 [0.80, 0.91] | 0.940 [0.91, 0.97] | 0.847 [0.79, 0.91] | 3,088 | 9.3 |
+  | G1, 26B-A4B | 0.853 [0.79, 0.90] | 0.933 [0.90, 0.97] | 0.847 [0.80, 0.90] | 3,088 | 3.7 |
+
+  P CIs: 12B 0.580 [0.48, 0.68] / 0.620 [0.51, 0.72]; 26B 0.573 [0.48, 0.66] / 0.633 [0.53, 0.72]. 12B, E4B and E2B ran on one T4, 26B-A4B on two, so the seconds are not a like-for-like speed comparison.
+  - **Where 26B is not better.** G1-26b ties G1-12b on file Hit@1 (0.853) and function Hit@10 (0.847) and is 0.007 lower on file Hit@5; it is not above G1-e4b either (file Hit@1 0.860, function Hit@10 0.827, overlapping CIs). A-26b is below A-12b on file Hit@1 (0.767 vs 0.787) and function Hit@10 (0.667 vs 0.720), and above it only on file Hit@5 (0.880 vs 0.867, inside the CIs); 5 of its 150 A answers name no parsable file, against none for 12B. P-26b is no better than P-12b (file Hit@5 0.633 vs 0.620). In short, on this subsample 26B-A4B adds nothing measurable over 12B for localization; its one practical advantage is speed (about 4B active parameters: G1 at 3.7 s vs 9.3 s, though on two T4s).
+  - **Paired differences, function Hit@10** (computed ad hoc with `loc/analysis.py`'s `cluster_boot`, 1,000 repository-clustered resamples, seed 0; not stored as a result file): G1-26b − G1-12b 0.000 [−0.021, 0.031]; A-26b − A-12b −0.053 [−0.095, 0.000]. File Hit@5: G1 −0.007 [−0.033, 0.023], A +0.013 [−0.009, 0.036], P +0.013 [−0.012, 0.039].
+  - **H3 size trend, descriptive extension** (G1 − A, function Hit@10, same 150 ids, CIs computed as above): E2B 0.253 [0.160, 0.350], E4B 0.227 [0.138, 0.305], 12B 0.127 [0.057, 0.200], 26B-A4B 0.180 [0.099, 0.273]. The shrink does **not** continue to 26B-A4B: its gap is larger than 12B's because A-26b is weaker than A-12b, not because G1 improves. The CIs of 12B and 26B overlap. The pre-registered H3 (E2B, E4B, 12B on `main`) is untouched.
+  - Writeup: one sentence in §5, labelled optional and not pre-registered; Table 1 stays the 519-instance table.
 
 ## References
 

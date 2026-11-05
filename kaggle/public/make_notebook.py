@@ -66,6 +66,7 @@ JOBS = {
     "final_eval": ("runs", "eval_ids.txt"),
     "eval_retrieval": ("runs", "eval_ids.txt"),
     "g2_subsample": ("runs", "g2_ids.txt"),
+    "eval_26b": ("runs", "ids_26b.txt"),  # optional 26B-A4B run, not pre-registered
     "masking": ("runs", "main_ids.txt"),
     "full_retrieval": ("runs_full", "all_ids.txt"),
 }

@@ -32,8 +32,8 @@ DATASET_SLUG = "born-after-the-cutoff"
 NOTEBOOK_SLUG = "born-after-the-cutoff-replay"
 
 ID_FILES = ["all_ids.txt", "eval_ids.txt", "main_ids.txt", "g2_ids.txt", "pilot_ids.txt", "pilot_g2_ids.txt",
-            "audit_ids.txt", "audit_exclusions.txt", "eval_manifest.json"]
-RESULTS = ["final_eval", "eval_e2b_e4b", "eval_12b", "g2_subsample", "masking", "eval_retrieval",
+            "audit_ids.txt", "audit_exclusions.txt", "eval_manifest.json", "ids_26b.txt"]
+RESULTS = ["final_eval", "eval_e2b_e4b", "eval_12b", "eval_26b", "g2_subsample", "masking", "eval_retrieval",
            "full_retrieval", "pilot_sanity", "hypotheses"]
 CODE_NOTE = """This folder is a copy of `loc/` from the code repository, included so the replay notebook runs
 offline. Licence: Apache-2.0 (see LICENSE). The rest of the dataset is CC BY 4.0.
